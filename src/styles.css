@@ -3,9 +3,10 @@
 @import "tw-animate-css";
 @import url("https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap");
 
-.font-arabic {
+body, .font-arabic {
   font-family: "Tajawal", system-ui, sans-serif;
 }
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -66,14 +67,19 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-navy: var(--navy);
+  --color-navy-foreground: var(--navy-foreground);
 }
 
 :root {
   --radius: 0.625rem;
-  --brand: oklch(0.72 0.12 75);
-  --brand-foreground: oklch(0.99 0.005 80);
+  --brand: oklch(0.78 0.13 78);
+  --brand-foreground: oklch(0.18 0.04 260);
+  --navy: oklch(0.22 0.045 260);
+  --navy-foreground: oklch(0.97 0.01 80);
   --background: oklch(0.985 0.008 80);
   --foreground: oklch(0.18 0.015 60);
+
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.015 60);
   --popover: oklch(1 0 0);
