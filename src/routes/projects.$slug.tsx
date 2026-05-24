@@ -1,5 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -7,93 +8,106 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SiteHeader } from "@/components/SiteHeader";
-import { PROJECTS, projectCounts, projectUnits } from "@/data/projects";
-import type { Unit } from "@/data/units";
+import { supabase } from "@/integrations/supabase/client";
+import type { ProjectRow, UnitRow } from "@/lib/types";
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
-  loader: ({ params }) => {
-    const project = PROJECTS.find((p) => p.slug === params.slug);
-    if (!project) throw notFound();
-    return { project };
+  loader: async ({ params }) => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("slug", params.slug)
+      .maybeSingle();
+    if (error || !data) throw notFound();
+    return { project: data as ProjectRow };
   },
   head: ({ loaderData }) => ({
     meta: [
       { title: `${loaderData?.project.name} | علو العقارية` },
       {
         name: "description",
-        content: `${loaderData?.project.tagline} — ${loaderData?.project.district}`,
+        content: `${loaderData?.project.tagline ?? ""} — ${loaderData?.project.district ?? ""}`,
       },
-      { property: "og:title", content: `${loaderData?.project.name} | علو العقارية` },
-      { property: "og:description", content: loaderData?.project.tagline ?? "" },
-      { property: "og:image", content: loaderData?.project.image ?? "" },
+      { property: "og:image", content: loaderData?.project.cover_image ?? "" },
     ],
   }),
 });
 
-const STATUS_OPTS = ["كل الحالات", "متاح", "غير متاح"] as const;
+const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع"] as const;
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
-  const units = projectUnits(project.id);
-  const counts = projectCounts(project.id);
-  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
-  const [floorFilter, setFloorFilter] = useState<string>("كل الأدوار");
+  const [statusFilter, setStatusFilter] =
+    useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
   const [search, setSearch] = useState("");
-  const [active, setActive] = useState<Unit | null>(null);
+  const [active, setActive] = useState<UnitRow | null>(null);
 
-  const floors = useMemo(() => {
-    const set = new Set<string>();
-    units.forEach((u) => u.floor && u.floor !== "—" && set.add(u.floor));
-    return ["كل الأدوار", ...Array.from(set)];
-  }, [units]);
+  const { data: units = [], isLoading } = useQuery({
+    queryKey: ["units", project.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("units")
+        .select("*")
+        .eq("project_id", project.id)
+        .order("sort_order");
+      if (error) throw error;
+      return data as UnitRow[];
+    },
+  });
 
-  const visible = useMemo(() => {
-    return units.filter((u) => {
-      if (statusFilter !== "كل الحالات" && u.status !== statusFilter) return false;
-      if (floorFilter !== "كل الأدوار" && u.floor !== floorFilter) return false;
-      if (search && !`${u.number} ${u.description ?? ""}`.includes(search)) return false;
-      return true;
-    });
-  }, [units, statusFilter, floorFilter, search]);
+  const visible = units.filter((u) => {
+    if (statusFilter !== "كل الحالات" && u.status !== statusFilter) return false;
+    if (search && !`${u.unit_number} ${u.features ?? ""}`.includes(search))
+      return false;
+    return true;
+  });
+
+  const counts = {
+    total: units.length,
+    available: units.filter((u) => u.status === "متاح").length,
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
 
-      {/* Hero */}
       <section className="mx-auto max-w-7xl px-6 pt-14 pb-6 text-center">
         <p className="text-brand uppercase tracking-[0.3em] text-xs mb-3">
-          {project.category}
+          {project.category === "Villas" ? "فلل" : "شقق"}
         </p>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-navy">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-navy">
           {project.name}
         </h1>
-        <p className="mt-4 text-muted-foreground">{project.tagline}</p>
+        {project.tagline && (
+          <p className="mt-4 text-muted-foreground">{project.tagline}</p>
+        )}
         {units.length > 0 && (
           <p className="mt-3 text-sm text-muted-foreground">
-            إجمالي الوحدات: <span className="font-bold text-foreground">{counts.total}</span>
+            إجمالي الوحدات:{" "}
+            <span className="font-bold text-foreground">{counts.total}</span>
             <span className="mx-2">•</span>
-            متاح: <span className="font-bold text-emerald-700">{counts.available}</span>
+            متاح:{" "}
+            <span className="font-bold text-emerald-700">{counts.available}</span>
           </p>
         )}
       </section>
 
-      {/* Cover image */}
-      <section className="mx-auto max-w-7xl px-6">
-        <div className="relative aspect-[16/7] overflow-hidden rounded-2xl border border-border bg-muted">
-          <img
-            src={project.image}
-            alt={project.name}
-            className="h-full w-full object-cover"
-          />
-        </div>
-      </section>
+      {project.cover_image && (
+        <section className="mx-auto max-w-7xl px-6">
+          <div className="relative aspect-[16/7] overflow-hidden rounded-2xl border border-border bg-muted">
+            <img
+              src={project.cover_image}
+              alt={project.name}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </section>
+      )}
 
-      {/* Filters */}
       <section className="mx-auto max-w-7xl px-6 mt-10">
         {units.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3 justify-end">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
               value={search}
@@ -102,17 +116,10 @@ function ProjectPage() {
               className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
             />
             <select
-              value={floorFilter}
-              onChange={(e) => setFloorFilter(e.target.value)}
-              className="h-11 rounded-lg border border-border bg-card px-3 text-sm"
-            >
-              {floors.map((f) => (
-                <option key={f}>{f}</option>
-              ))}
-            </select>
-            <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as (typeof STATUS_OPTS)[number])}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as (typeof STATUS_OPTS)[number])
+              }
               className="h-11 rounded-lg border border-border bg-card px-3 text-sm"
             >
               {STATUS_OPTS.map((f) => (
@@ -123,9 +130,10 @@ function ProjectPage() {
         )}
       </section>
 
-      {/* Units grid */}
       <main className="mx-auto max-w-7xl px-6 pb-16 mt-6">
-        {units.length === 0 ? (
+        {isLoading ? (
+          <p className="text-center text-muted-foreground py-10">جاري التحميل...</p>
+        ) : units.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-10 text-center text-muted-foreground">
             لا توجد وحدات معروضة حالياً لهذا المشروع.
           </div>
@@ -135,21 +143,25 @@ function ProjectPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {visible.map((u, i) => (
-              <UnitCard key={i} unit={u} onClick={() => setActive(u)} />
+            {visible.map((u) => (
+              <UnitCard key={u.id} unit={u} onClick={() => setActive(u)} />
             ))}
           </div>
         )}
       </main>
 
-      {/* Contact */}
       <section className="bg-muted/40 border-t border-border">
         <div className="mx-auto max-w-5xl px-6 py-12">
-          <h2 className="text-center text-2xl font-bold text-navy">للحجز والاستفسار</h2>
+          <h2 className="text-center text-2xl font-bold text-navy">
+            للحجز والاستفسار
+          </h2>
           <div className="mx-auto mt-2 h-0.5 w-16 bg-brand rounded-full" />
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
             {["0570020095", "0570020093", "0554745500"].map((phone) => (
-              <div key={phone} className="bg-card rounded-xl border border-border p-5 text-center">
+              <div
+                key={phone}
+                className="bg-card rounded-xl border border-border p-5 text-center"
+              >
                 <div className="text-xl font-bold tracking-wider">{phone}</div>
                 <div className="mt-4 flex justify-center gap-2">
                   <a
@@ -171,21 +183,20 @@ function ProjectPage() {
             ))}
           </div>
           <div className="mt-8 text-center">
-            <Link to="/" className="text-sm text-brand hover:underline">
+            <Link to="/projects" className="text-sm text-brand hover:underline">
               ← عودة لجميع المشاريع
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Unit details modal */}
       <Dialog open={!!active} onOpenChange={(o) => !o && setActive(null)}>
-        <DialogContent className="max-w-lg" dir="rtl">
+        <DialogContent className="max-w-2xl" dir="rtl">
           {active && (
             <>
               <DialogHeader>
                 <DialogTitle className="text-2xl text-right">
-                  وحدة رقم {active.number}
+                  وحدة رقم {active.unit_number}
                 </DialogTitle>
               </DialogHeader>
               <div className="mt-2">
@@ -199,29 +210,32 @@ function ProjectPage() {
                   {active.status}
                 </span>
               </div>
+              {active.plan_image && (
+                <a
+                  href={active.plan_image}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block mt-3 rounded-lg overflow-hidden border border-border"
+                >
+                  <img
+                    src={active.plan_image}
+                    alt={`مخطط الوحدة ${active.unit_number}`}
+                    className="w-full h-auto object-contain bg-white"
+                  />
+                </a>
+              )}
               <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                {active.floor && active.floor !== "—" && (
-                  <Row label="الدور" value={active.floor} />
-                )}
-                {active.totalArea && active.totalArea !== "—" && (
-                  <Row label="المساحة الكلية" value={active.totalArea} />
-                )}
-                {active.privateArea && active.privateArea !== "—" && (
-                  <Row label="الجزء الخاص" value={active.privateArea} />
-                )}
-                {active.landArea && active.landArea !== "—" && (
-                  <Row label="مساحة الأرض" value={active.landArea} />
-                )}
-                {active.buildArea && active.buildArea !== "—" && (
-                  <Row label="مساحة البناء" value={active.buildArea} />
-                )}
+                {active.area_m2 && <Row label="المساحة م²" value={active.area_m2} />}
                 {active.dimensions && (
-                  <Row label="الأبعاد" value={active.dimensions} />
+                  <Row label="الأطوال" value={active.dimensions} />
+                )}
+                {active.built_area_m2 && (
+                  <Row label="مسطح البناء م²" value={active.built_area_m2} />
                 )}
                 <Row
                   label="السعر"
                   value={
-                    active.price && active.price !== "—" ? (
+                    active.price ? (
                       <span className="text-brand font-bold">{active.price}</span>
                     ) : (
                       "—"
@@ -229,9 +243,9 @@ function ProjectPage() {
                   }
                 />
               </dl>
-              {active.description && (
+              {active.features && (
                 <p className="mt-5 pt-4 border-t border-border text-sm text-muted-foreground leading-loose">
-                  {active.description}
+                  {active.features}
                 </p>
               )}
             </>
@@ -251,7 +265,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function UnitCard({ unit, onClick }: { unit: Unit; onClick: () => void }) {
+function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
   const available = unit.status === "متاح";
   return (
     <button
@@ -261,7 +275,7 @@ function UnitCard({ unit, onClick }: { unit: Unit; onClick: () => void }) {
       <div className="flex items-start justify-between">
         <div>
           <div className="text-xs text-muted-foreground">رقم الوحدة</div>
-          <div className="text-2xl font-bold mt-1">{unit.number}</div>
+          <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
         </div>
         <span
           className={`text-xs px-2.5 py-1 rounded-full ${
@@ -274,22 +288,14 @@ function UnitCard({ unit, onClick }: { unit: Unit; onClick: () => void }) {
         </span>
       </div>
       <dl className="mt-4 space-y-2 text-sm">
-        {unit.floor && unit.floor !== "—" && (
-          <Pair label="الدور" value={unit.floor} />
-        )}
-        {unit.totalArea && unit.totalArea !== "—" && (
-          <Pair label="المساحة الكلية" value={unit.totalArea} />
-        )}
-        {unit.landArea && unit.landArea !== "—" && (
-          <Pair label="مساحة الأرض" value={unit.landArea} />
-        )}
-        {unit.buildArea && unit.buildArea !== "—" && (
-          <Pair label="مساحة البناء" value={unit.buildArea} />
+        {unit.area_m2 && <Pair label="المساحة م²" value={unit.area_m2} />}
+        {unit.built_area_m2 && (
+          <Pair label="مسطح البناء" value={unit.built_area_m2} />
         )}
         <Pair
           label="السعر"
           value={
-            unit.price && unit.price !== "—" ? (
+            unit.price ? (
               <span className="text-brand font-bold">{unit.price}</span>
             ) : (
               <span className="text-muted-foreground">—</span>
@@ -312,3 +318,4 @@ function Pair({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
+
