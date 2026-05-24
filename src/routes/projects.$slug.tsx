@@ -309,3 +309,13 @@ function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
     </button>
   );
 }
+
+function Pair({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="text-sm">{value}</span>
+    </div>
+  );
+}
+
