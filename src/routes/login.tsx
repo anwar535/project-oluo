@@ -25,7 +25,7 @@ function LoginPage() {
       setError("بيانات الدخول غير صحيحة");
       return;
     }
-    throw redirect({ to: "/admin" }) ?? navigate({ to: "/admin" });
+    navigate({ to: "/admin" });
   }
 
   return (
