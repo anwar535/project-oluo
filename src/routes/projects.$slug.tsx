@@ -62,7 +62,7 @@ function ProjectPage() {
         .eq("project_id", project.id)
         .order("sort_order");
       if (error) throw error;
-      return data as UnitRow[];
+      return data as unknown as UnitRow[];
     },
   });
 

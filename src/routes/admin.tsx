@@ -47,7 +47,7 @@ function AdminPage() {
         .eq("project_id", selectedProject)
         .order("sort_order");
       if (error) throw error;
-      return data as UnitRow[];
+      return data as unknown as UnitRow[];
     },
     enabled: !!selectedProject,
   });
