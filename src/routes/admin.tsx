@@ -91,6 +91,46 @@ function AdminPage() {
     await updateUnit(unitId, { plan_image: data.publicUrl });
   }
 
+  async function bulkUploadPlans(files: FileList) {
+    if (!selectedProject || files.length === 0) return;
+    setSyncMsg(null);
+    let matched = 0;
+    const unmatched: string[] = [];
+    const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
+    const unitMap = new Map(units.map((u) => [norm(u.unit_number), u.id]));
+
+    for (const file of Array.from(files)) {
+      const base = file.name.replace(/\.[^.]+$/, "");
+      const baseN = norm(base);
+      let unitId: string | undefined;
+      const tokens = baseN.split(/[-_\s.()]+/).filter(Boolean);
+      for (let i = tokens.length - 1; i >= 0; i--) {
+        if (unitMap.has(tokens[i])) { unitId = unitMap.get(tokens[i]); break; }
+      }
+      if (!unitId) {
+        const candidates = [...unitMap.keys()]
+          .filter((un) => baseN.includes(un))
+          .sort((a, b) => b.length - a.length);
+        if (candidates[0]) unitId = unitMap.get(candidates[0]);
+      }
+      if (!unitId) { unmatched.push(file.name); continue; }
+      const path = `${unitId}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage.from("plans").upload(path, file, { upsert: true });
+      if (error) { unmatched.push(`${file.name} (${error.message})`); continue; }
+      const { data } = supabase.storage.from("plans").getPublicUrl(path);
+      const { error: e2 } = await supabase.from("units").update({ plan_image: data.publicUrl }).eq("id", unitId);
+      if (e2) { unmatched.push(`${file.name} (${e2.message})`); continue; }
+      matched++;
+    }
+    refetchUnits();
+    setSyncMsg(
+      `تم ربط ${matched} مخطط بالوحدات.` +
+        (unmatched.length
+          ? ` لم تتم مطابقة: ${unmatched.slice(0, 5).join("، ")}${unmatched.length > 5 ? ` (+${unmatched.length - 5} ملف آخر)` : ""}`
+          : ""),
+    );
+  }
+
   async function uploadCover(projectId: string, file: File) {
     const path = `covers/${projectId}-${Date.now()}-${file.name}`;
     const { error } = await supabase.storage.from("plans").upload(path, file, {
