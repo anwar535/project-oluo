@@ -66,17 +66,32 @@ async function fetchTab(tab: string): Promise<UnitInput[]> {
   const csv = await res.text();
   const rows = parseCSV(csv);
   if (rows.length < 2) return [];
-  const headers = rows[0].map((h) => h.trim());
-  const fields = headers.map((h) => HEADER_MAP[h.toLowerCase()] ?? HEADER_MAP[h]);
+  const headers = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
+  const fields = headers.map(
+    (h) => HEADER_MAP[h] ?? HEADER_MAP[h.toLowerCase()],
+  );
   const units: UnitInput[] = [];
   for (const r of rows.slice(1)) {
     const u: any = {};
     fields.forEach((f, i) => {
-      if (f && r[i] != null) u[f] = r[i].trim();
+      if (f && r[i] != null) {
+        const val = r[i].trim();
+        if (val) u[f] = val;
+      }
     });
+    if (u.plan_image) u.plan_image = normalizeDriveUrl(u.plan_image);
     if (u.unit_number) units.push(u);
   }
   return units;
+}
+
+function normalizeDriveUrl(url: string): string {
+  // Convert Google Drive share links to direct image URLs
+  const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+  const q = url.match(/[?&]id=([\w-]+)/);
+  if (q && url.includes("drive.google.com")) return `https://drive.google.com/thumbnail?id=${q[1]}&sz=w1600`;
+  return url;
 }
 
 export const Route = createFileRoute("/api/public/hooks/sync-sheet")({
