@@ -9,7 +9,15 @@ import {
 } from "@/components/ui/dialog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
-import type { ProjectRow, UnitRow } from "@/lib/types";
+import type { ColumnDef, ProjectRow, UnitRow } from "@/lib/types";
+
+function unitValue(u: UnitRow, col: ColumnDef): string | null {
+  if (col.field) {
+    const v = (u as any)[col.field];
+    return v ? String(v) : null;
+  }
+  return u.extra?.[col.label] ?? null;
+}
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
@@ -20,7 +28,7 @@ export const Route = createFileRoute("/projects/$slug")({
       .eq("slug", params.slug)
       .maybeSingle();
     if (error || !data) throw notFound();
-    return { project: data as ProjectRow };
+    return { project: data as unknown as ProjectRow };
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -62,7 +70,7 @@ function ProjectPage() {
         .eq("project_id", project.id)
         .order("sort_order");
       if (error) throw error;
-      return data as UnitRow[];
+      return data as unknown as UnitRow[];
     },
   });
 
@@ -194,11 +202,11 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} onOpen={setActive} />
+          <UnitsTable units={visible} columns={project.columns ?? []} onOpen={setActive} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} onClick={() => setActive(u)} />
+              <UnitCard key={u.id} unit={u} columns={project.columns ?? []} onClick={() => setActive(u)} />
             ))}
           </div>
         )}
@@ -264,9 +272,11 @@ function StatusPill({ status }: { status: string }) {
 
 function UnitsTable({
   units,
+  columns,
   onOpen,
 }: {
   units: UnitRow[];
+  columns: ColumnDef[];
   onOpen: (u: UnitRow) => void;
 }) {
   return (
@@ -275,10 +285,11 @@ function UnitsTable({
         <thead className="bg-muted/60 text-muted-foreground">
           <tr>
             <th className="px-4 py-3 font-medium">رقم الوحدة</th>
-            <th className="px-4 py-3 font-medium">المساحة م²</th>
-            <th className="px-4 py-3 font-medium">الأطوال</th>
-            <th className="px-4 py-3 font-medium">مسطح البناء م²</th>
-            <th className="px-4 py-3 font-medium">السعر</th>
+            {columns.map((c) => (
+              <th key={c.label} className="px-4 py-3 font-medium whitespace-nowrap">
+                {c.label}
+              </th>
+            ))}
             <th className="px-4 py-3 font-medium">الحالة</th>
             <th className="px-4 py-3 font-medium"></th>
           </tr>
@@ -290,18 +301,26 @@ function UnitsTable({
               className="border-t border-border hover:bg-muted/30 transition"
             >
               <td className="px-4 py-3 font-bold">{u.unit_number}</td>
-              <td className="px-4 py-3">{u.area_m2 ?? "—"}</td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {u.dimensions ?? "—"}
-              </td>
-              <td className="px-4 py-3">{u.built_area_m2 ?? "—"}</td>
-              <td className="px-4 py-3">
-                {u.price ? (
-                  <span className="text-brand font-bold">{u.price}</span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </td>
+              {columns.map((c) => {
+                const v = unitValue(u, c);
+                const isPrice = c.field === "price";
+                return (
+                  <td
+                    key={c.label}
+                    className={`px-4 py-3 ${c.field === "dimensions" ? "text-muted-foreground" : ""}`}
+                  >
+                    {v ? (
+                      isPrice ? (
+                        <span className="text-brand font-bold">{v}</span>
+                      ) : (
+                        v
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                );
+              })}
               <td className="px-4 py-3">
                 <StatusPill status={u.status} />
               </td>
@@ -321,7 +340,15 @@ function UnitsTable({
   );
 }
 
-function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
+function UnitCard({
+  unit,
+  columns,
+  onClick,
+}: {
+  unit: UnitRow;
+  columns: ColumnDef[];
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -335,20 +362,25 @@ function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
         <StatusPill status={unit.status} />
       </div>
       <dl className="mt-4 space-y-2 text-sm">
-        {unit.area_m2 && <Pair label="المساحة م²" value={unit.area_m2} />}
-        {unit.built_area_m2 && (
-          <Pair label="مسطح البناء" value={unit.built_area_m2} />
-        )}
-        <Pair
-          label="السعر"
-          value={
-            unit.price ? (
-              <span className="text-brand font-bold">{unit.price}</span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )
-          }
-        />
+        {columns
+          .filter((c) => c.field !== "features")
+          .map((c) => {
+            const v = unitValue(unit, c);
+            if (!v) return null;
+            return (
+              <Pair
+                key={c.label}
+                label={c.label}
+                value={
+                  c.field === "price" ? (
+                    <span className="text-brand font-bold">{v}</span>
+                  ) : (
+                    v
+                  )
+                }
+              />
+            );
+          })}
       </dl>
       <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
         عرض التفاصيل ←
@@ -356,6 +388,7 @@ function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
     </button>
   );
 }
+
 
 function Pair({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -437,14 +470,19 @@ function UnitDialog({
             )}
 
             <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DataBox label="المساحة م²" value={unit.area_m2} />
-              <DataBox label="الأطوال" value={unit.dimensions} />
-              <DataBox label="مسطح البناء م²" value={unit.built_area_m2} />
-              <DataBox
-                label="السعر"
-                value={unit.price}
-                accent={!!unit.price}
-              />
+              {(project.columns ?? [])
+                .filter((c) => c.field !== "features")
+                .map((c) => {
+                  const v = unitValue(unit, c);
+                  return (
+                    <DataBox
+                      key={c.label}
+                      label={c.label}
+                      value={v}
+                      accent={c.field === "price" && !!v}
+                    />
+                  );
+                })}
             </div>
 
             {unit.features && (

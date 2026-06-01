@@ -1,3 +1,17 @@
+export type ColumnDef = {
+  label: string;
+  field:
+    | "unit_number"
+    | "area_m2"
+    | "dimensions"
+    | "built_area_m2"
+    | "price"
+    | "features"
+    | "status"
+    | "plan_image"
+    | null;
+};
+
 export type ProjectRow = {
   id: string;
   slug: string;
@@ -10,6 +24,7 @@ export type ProjectRow = {
   cover_image: string | null;
   sheet_tab: string | null;
   sort_order: number;
+  columns: ColumnDef[];
 };
 
 export type UnitRow = {
@@ -24,6 +39,7 @@ export type UnitRow = {
   status: string;
   plan_image: string | null;
   sort_order: number;
+  extra: Record<string, string>;
 };
 
 export const PROJECT_STATUSES = [
