@@ -3,20 +3,11 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SHEET_ID = "1nSVfMa9OdZZUt9n9B-3CwX7KdjOqLOxy_5flkR2VfpU";
 
-// Known fields stored as dedicated columns on units; everything else is kept in `extra`.
-const KNOWN_FIELDS = [
-  "unit_number",
-  "area_m2",
-  "dimensions",
-  "built_area_m2",
-  "price",
-  "features",
-  "status",
-  "plan_image",
-] as const;
-type KnownField = (typeof KNOWN_FIELDS)[number];
+// Expected sheet columns (header row, case-insensitive match):
+// unit_number | area_m2 | dimensions | built_area_m2 | price | features | status | plan_image
+// Arabic synonyms also accepted: رقم الوحدة | المساحة | الأبعاد | البناء | السعر | المميزات | الحالة | المخطط
 
-const HEADER_MAP: Record<string, KnownField> = {
+const HEADER_MAP: Record<string, keyof UnitInput> = {
   unit_number: "unit_number", "رقم الوحدة": "unit_number", "رقم": "unit_number",
   "رقم الوحدة / الفيلا": "unit_number", "رقم الفيلا": "unit_number", "رقم الشقة": "unit_number",
   area_m2: "area_m2", "المساحة": "area_m2", "مساحة الأرض": "area_m2",
@@ -29,14 +20,22 @@ const HEADER_MAP: Record<string, KnownField> = {
   price: "price", "السعر": "price", "سعر البيع": "price",
   features: "features", "المميزات": "features", "أبرز المميزات": "features",
   "أبرز المميزات ( كمثال واجهة / زاوية )": "features",
-  "أبرز المميزات ( كمثال واجهة / زاوية / موقف قبو )": "features",
   "ابرز المميزات": "features", "الملاحظات": "features",
   status: "status", "الحالة": "status",
   plan_image: "plan_image", "المخطط": "plan_image", "صورة المخطط": "plan_image",
   "رابط صورة المخطط": "plan_image", "رابط المخطط": "plan_image",
 };
 
-type ColumnDef = { label: string; field: KnownField | null };
+type UnitInput = {
+  unit_number: string;
+  area_m2?: string;
+  dimensions?: string;
+  built_area_m2?: string;
+  price?: string;
+  features?: string;
+  status?: string;
+  plan_image?: string;
+};
 
 function parseCSV(text: string): string[][] {
   const rows: string[][] = [];
@@ -60,7 +59,34 @@ function parseCSV(text: string): string[][] {
   return rows.filter((r) => r.some((v) => v.trim() !== ""));
 }
 
+async function fetchTab(tab: string): Promise<UnitInput[]> {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const csv = await res.text();
+  const rows = parseCSV(csv);
+  if (rows.length < 2) return [];
+  const headers = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
+  const fields = headers.map(
+    (h) => HEADER_MAP[h] ?? HEADER_MAP[h.toLowerCase()],
+  );
+  const units: UnitInput[] = [];
+  for (const r of rows.slice(1)) {
+    const u: any = {};
+    fields.forEach((f, i) => {
+      if (f && r[i] != null) {
+        const val = r[i].trim();
+        if (val) u[f] = val;
+      }
+    });
+    if (u.plan_image) u.plan_image = normalizeDriveUrl(u.plan_image);
+    if (u.unit_number) units.push(u);
+  }
+  return units;
+}
+
 function normalizeDriveUrl(url: string): string {
+  // Convert Google Drive share links to direct image URLs
   const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/);
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
   const q = url.match(/[?&]id=([\w-]+)/);
@@ -68,63 +94,13 @@ function normalizeDriveUrl(url: string): string {
   return url;
 }
 
-function mapHeader(h: string): KnownField | null {
-  const norm = h.trim().replace(/\s+/g, " ");
-  return HEADER_MAP[norm] ?? HEADER_MAP[norm.toLowerCase()] ?? null;
-}
-
-type FetchedTab = {
-  columns: ColumnDef[];
-  rows: Array<{
-    known: Partial<Record<KnownField, string>>;
-    extra: Record<string, string>;
-  }>;
-};
-
-async function fetchTab(tab: string): Promise<FetchedTab | null> {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const csv = await res.text();
-  const rows = parseCSV(csv);
-  if (rows.length < 2) return null;
-
-  const rawHeaders = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
-  const fields = rawHeaders.map(mapHeader);
-
-  // Public column schema (what the website shows). Exclude unit_number, status,
-  // and plan_image — those are rendered separately.
-  const columns: ColumnDef[] = rawHeaders
-    .map((label, i) => ({ label, field: fields[i] }))
-    .filter(
-      (c) =>
-        c.label &&
-        c.field !== "unit_number" &&
-        c.field !== "status" &&
-        c.field !== "plan_image",
-    );
-
-  const out: FetchedTab["rows"] = [];
-  for (const r of rows.slice(1)) {
-    const known: Partial<Record<KnownField, string>> = {};
-    const extra: Record<string, string> = {};
-    rawHeaders.forEach((label, i) => {
-      const val = (r[i] ?? "").trim();
-      if (!val) return;
-      const f = fields[i];
-      if (f) {
-        known[f] = f === "plan_image" ? normalizeDriveUrl(val) : val;
-      } else {
-        extra[label] = val;
-      }
-    });
-    if (known.unit_number) out.push({ known, extra });
-  }
-  return { columns, rows: out };
-}
-
 export const Route = createFileRoute("/api/public/hooks/sync-sheet")({
-  server: { handlers: { POST: handler, GET: handler } },
+  server: {
+    handlers: {
+      POST: handler,
+      GET: handler,
+    },
+  },
 });
 
 async function handler() {
@@ -135,19 +111,15 @@ async function handler() {
   const { data: projects, error } = await supabaseAdmin
     .from("projects")
     .select("id, sheet_tab");
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 
   for (const p of projects ?? []) {
     const tab = p.sheet_tab || p.id;
     try {
-      const tabData = await fetchTab(tab);
-      if (!tabData) continue;
-
-      // Save the column schema for this project so the UI mirrors the sheet.
-      await supabaseAdmin
-        .from("projects")
-        .update({ columns: tabData.columns })
-        .eq("id", p.id);
+      const units = await fetchTab(tab);
+      if (units.length === 0) continue;
 
       const { data: existing } = await supabaseAdmin
         .from("units")
@@ -157,25 +129,25 @@ async function handler() {
         (existing ?? []).map((u: any) => [u.unit_number, u.id]),
       );
 
-      for (let i = 0; i < tabData.rows.length; i++) {
-        const { known, extra } = tabData.rows[i];
-        const payload: any = {
+      for (let i = 0; i < units.length; i++) {
+        const u = units[i];
+        const payload = {
           project_id: p.id,
-          unit_number: known.unit_number!,
-          area_m2: known.area_m2 ?? null,
-          dimensions: known.dimensions ?? null,
-          built_area_m2: known.built_area_m2 ?? null,
-          price: known.price ?? null,
-          features: known.features ?? null,
-          status: known.status || "متاح",
-          plan_image: known.plan_image || null,
-          extra,
+          unit_number: u.unit_number,
+          area_m2: u.area_m2 ?? null,
+          dimensions: u.dimensions ?? null,
+          built_area_m2: u.built_area_m2 ?? null,
+          price: u.price ?? null,
+          features: u.features ?? null,
+          status: u.status || "متاح",
+          plan_image: u.plan_image || null,
           sort_order: i,
         };
-        const existingId = existingMap.get(known.unit_number!);
+        const existingId = existingMap.get(u.unit_number);
         if (existingId) {
-          const patch = { ...payload };
-          if (!known.plan_image) delete patch.plan_image;
+          // Don't overwrite plan_image if sheet doesn't provide one
+          const patch: any = { ...payload };
+          if (!u.plan_image) delete patch.plan_image;
           const { error: e } = await supabaseAdmin
             .from("units")
             .update(patch)

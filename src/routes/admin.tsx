@@ -32,7 +32,7 @@ function AdminPage() {
         .select("*")
         .order("sort_order");
       if (error) throw error;
-      return data as unknown as ProjectRow[];
+      return data as ProjectRow[];
     },
     enabled: !!session,
   });
@@ -47,7 +47,7 @@ function AdminPage() {
         .eq("project_id", selectedProject)
         .order("sort_order");
       if (error) throw error;
-      return data as unknown as UnitRow[];
+      return data as UnitRow[];
     },
     enabled: !!selectedProject,
   });
