@@ -17,6 +17,7 @@ export type Database = {
       projects: {
         Row: {
           category: string
+          columns: Json
           cover_image: string | null
           created_at: string
           district: string | null
@@ -32,6 +33,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          columns?: Json
           cover_image?: string | null
           created_at?: string
           district?: string | null
@@ -47,6 +49,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          columns?: Json
           cover_image?: string | null
           created_at?: string
           district?: string | null
@@ -95,6 +98,7 @@ export type Database = {
           built_area_m2: string | null
           created_at: string
           dimensions: string | null
+          extra: Json
           features: string | null
           id: string
           plan_image: string | null
@@ -110,6 +114,7 @@ export type Database = {
           built_area_m2?: string | null
           created_at?: string
           dimensions?: string | null
+          extra?: Json
           features?: string | null
           id?: string
           plan_image?: string | null
@@ -125,6 +130,7 @@ export type Database = {
           built_area_m2?: string | null
           created_at?: string
           dimensions?: string | null
+          extra?: Json
           features?: string | null
           id?: string
           plan_image?: string | null
