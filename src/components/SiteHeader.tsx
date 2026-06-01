@@ -26,13 +26,6 @@ export function SiteHeader() {
           >
             الرئيسية
           </Link>
-          <Link
-            to="/projects"
-            className="px-4 py-2 rounded-md hover:bg-white/5 hover:text-brand transition-colors"
-            activeProps={{ className: "text-brand bg-white/5" }}
-          >
-            المشاريع
-          </Link>
           {session && isAdmin && (
             <Link
               to="/admin"
