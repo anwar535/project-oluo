@@ -45,8 +45,17 @@ export const Route = createFileRoute("/projects/$slug")({
 const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع", "غير متاح"] as const;
 const CONTACT_PHONES = ["0570020095", "0570020093", "0554745500"];
 
+// Heuristics for special-styled columns (highlight price, etc.)
+function isPriceCol(label: string) {
+  return /سعر|price/i.test(label);
+}
+function isFeaturesCol(label: string) {
+  return /مميزات|ميزة|ملاحظ|features|notes/i.test(label);
+}
+
 function ProjectPage() {
   const { project } = Route.useLoaderData();
+  const columns = project.columns ?? [];
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
   const [search, setSearch] = useState("");
@@ -70,13 +79,10 @@ function ProjectPage() {
     () =>
       units.filter((u) => {
         if (statusFilter !== "كل الحالات" && u.status !== statusFilter) return false;
-        if (
-          search &&
-          !`${u.unit_number} ${u.features ?? ""}`
-            .toLowerCase()
-            .includes(search.toLowerCase())
-        )
-          return false;
+        if (search) {
+          const hay = `${u.unit_number} ${Object.values(u.extra ?? {}).join(" ")}`.toLowerCase();
+          if (!hay.includes(search.toLowerCase())) return false;
+        }
         return true;
       }),
     [units, statusFilter, search],
@@ -142,7 +148,7 @@ function ProjectPage() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث برقم الوحدة أو المميزات..."
+              placeholder="ابحث برقم الوحدة أو أي بيان..."
               className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
             />
             <select
@@ -194,11 +200,11 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} onOpen={setActive} />
+          <UnitsTable units={visible} columns={columns} onOpen={setActive} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} onClick={() => setActive(u)} />
+              <UnitCard key={u.id} unit={u} columns={columns} onClick={() => setActive(u)} />
             ))}
           </div>
         )}
@@ -218,7 +224,12 @@ function ProjectPage() {
         </div>
       </section>
 
-      <UnitDialog unit={active} onClose={() => setActive(null)} project={project} />
+      <UnitDialog
+        unit={active}
+        columns={columns}
+        onClose={() => setActive(null)}
+        project={project}
+      />
     </div>
   );
 }
@@ -264,9 +275,11 @@ function StatusPill({ status }: { status: string }) {
 
 function UnitsTable({
   units,
+  columns,
   onOpen,
 }: {
   units: UnitRow[];
+  columns: string[];
   onOpen: (u: UnitRow) => void;
 }) {
   return (
@@ -274,11 +287,12 @@ function UnitsTable({
       <table className="w-full text-sm text-right">
         <thead className="bg-muted/60 text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 font-medium">رقم الوحدة</th>
-            <th className="px-4 py-3 font-medium">المساحة م²</th>
-            <th className="px-4 py-3 font-medium">الأطوال</th>
-            <th className="px-4 py-3 font-medium">مسطح البناء م²</th>
-            <th className="px-4 py-3 font-medium">السعر</th>
+            <th className="px-4 py-3 font-medium whitespace-nowrap">رقم الوحدة</th>
+            {columns.map((c) => (
+              <th key={c} className="px-4 py-3 font-medium whitespace-nowrap">
+                {c}
+              </th>
+            ))}
             <th className="px-4 py-3 font-medium">الحالة</th>
             <th className="px-4 py-3 font-medium"></th>
           </tr>
@@ -290,18 +304,29 @@ function UnitsTable({
               className="border-t border-border hover:bg-muted/30 transition"
             >
               <td className="px-4 py-3 font-bold">{u.unit_number}</td>
-              <td className="px-4 py-3">{u.area_m2 ?? "—"}</td>
-              <td className="px-4 py-3 text-muted-foreground">
-                {u.dimensions ?? "—"}
-              </td>
-              <td className="px-4 py-3">{u.built_area_m2 ?? "—"}</td>
-              <td className="px-4 py-3">
-                {u.price ? (
-                  <span className="text-brand font-bold">{u.price}</span>
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </td>
+              {columns.map((c) => {
+                const val = u.extra?.[c];
+                if (isPriceCol(c)) {
+                  return (
+                    <td key={c} className="px-4 py-3">
+                      {val ? (
+                        <span className="text-brand font-bold">{val}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  );
+                }
+                return (
+                  <td
+                    key={c}
+                    className={`px-4 py-3 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
+                    title={isFeaturesCol(c) ? val ?? "" : undefined}
+                  >
+                    {val || "—"}
+                  </td>
+                );
+              })}
               <td className="px-4 py-3">
                 <StatusPill status={u.status} />
               </td>
@@ -321,7 +346,19 @@ function UnitsTable({
   );
 }
 
-function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
+function UnitCard({
+  unit,
+  columns,
+  onClick,
+}: {
+  unit: UnitRow;
+  columns: string[];
+  onClick: () => void;
+}) {
+  // Show up to first 3 non-features columns + price if present
+  const featured = columns
+    .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
+    .slice(0, 4);
   return (
     <button
       onClick={onClick}
@@ -335,20 +372,19 @@ function UnitCard({ unit, onClick }: { unit: UnitRow; onClick: () => void }) {
         <StatusPill status={unit.status} />
       </div>
       <dl className="mt-4 space-y-2 text-sm">
-        {unit.area_m2 && <Pair label="المساحة م²" value={unit.area_m2} />}
-        {unit.built_area_m2 && (
-          <Pair label="مسطح البناء" value={unit.built_area_m2} />
-        )}
-        <Pair
-          label="السعر"
-          value={
-            unit.price ? (
-              <span className="text-brand font-bold">{unit.price}</span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            )
-          }
-        />
+        {featured.map((c) => (
+          <Pair
+            key={c}
+            label={c}
+            value={
+              isPriceCol(c) ? (
+                <span className="text-brand font-bold">{unit.extra[c]}</span>
+              ) : (
+                unit.extra[c]
+              )
+            }
+          />
+        ))}
       </dl>
       <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
         عرض التفاصيل ←
@@ -392,10 +428,12 @@ function ContactCard({ phone }: { phone: string }) {
 
 function UnitDialog({
   unit,
+  columns,
   onClose,
   project,
 }: {
   unit: UnitRow | null;
+  columns: string[];
   onClose: () => void;
   project: ProjectRow;
 }) {
@@ -405,6 +443,13 @@ function UnitDialog({
       )
     : "";
   const primaryPhone = CONTACT_PHONES[0];
+
+  const dataCols = unit
+    ? columns.filter((c) => !isFeaturesCol(c))
+    : [];
+  const featureCols = unit
+    ? columns.filter((c) => isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
+    : [];
 
   return (
     <Dialog open={!!unit} onOpenChange={(o) => !o && onClose()}>
@@ -436,27 +481,27 @@ function UnitDialog({
               </a>
             )}
 
-            <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DataBox label="المساحة م²" value={unit.area_m2} />
-              <DataBox label="الأطوال" value={unit.dimensions} />
-              <DataBox label="مسطح البناء م²" value={unit.built_area_m2} />
-              <DataBox
-                label="السعر"
-                value={unit.price}
-                accent={!!unit.price}
-              />
-            </div>
-
-            {unit.features && (
-              <div className="mt-5 pt-4 border-t border-border">
-                <h3 className="text-sm font-bold text-navy mb-2">
-                  المكونات والمميزات
-                </h3>
-                <p className="text-sm text-muted-foreground leading-loose whitespace-pre-line">
-                  {unit.features}
-                </p>
+            {dataCols.length > 0 && (
+              <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
+                {dataCols.map((c) => (
+                  <DataBox
+                    key={c}
+                    label={c}
+                    value={unit.extra?.[c] ?? null}
+                    accent={isPriceCol(c) && !!unit.extra?.[c]}
+                  />
+                ))}
               </div>
             )}
+
+            {featureCols.map((c) => (
+              <div key={c} className="mt-5 pt-4 border-t border-border">
+                <h3 className="text-sm font-bold text-navy mb-2">{c}</h3>
+                <p className="text-sm text-muted-foreground leading-loose whitespace-pre-line">
+                  {unit.extra[c]}
+                </p>
+              </div>
+            ))}
 
             <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
               <a
