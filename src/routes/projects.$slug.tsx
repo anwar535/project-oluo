@@ -9,7 +9,15 @@ import {
 } from "@/components/ui/dialog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
-import type { ProjectRow, UnitRow } from "@/lib/types";
+import type { ColumnDef, ProjectRow, UnitRow } from "@/lib/types";
+
+function unitValue(u: UnitRow, col: ColumnDef): string | null {
+  if (col.field) {
+    const v = (u as any)[col.field];
+    return v ? String(v) : null;
+  }
+  return u.extra?.[col.label] ?? null;
+}
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
