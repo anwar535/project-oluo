@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
+import { Route as ApiPublicHooksSyncSheetRouteImport } from './routes/api/public/hooks/sync-sheet'
 
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
@@ -40,6 +41,11 @@ const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ProjectsRoute,
 } as any)
+const ApiPublicHooksSyncSheetRoute = ApiPublicHooksSyncSheetRouteImport.update({
+  id: '/api/public/hooks/sync-sheet',
+  path: '/api/public/hooks/sync-sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/api/public/hooks/sync-sheet': typeof ApiPublicHooksSyncSheetRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/api/public/hooks/sync-sheet': typeof ApiPublicHooksSyncSheetRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,33 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/api/public/hooks/sync-sheet': typeof ApiPublicHooksSyncSheetRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/login' | '/projects' | '/projects/$slug'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/projects'
+    | '/projects/$slug'
+    | '/api/public/hooks/sync-sheet'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/login' | '/projects' | '/projects/$slug'
-  id: '__root__' | '/' | '/admin' | '/login' | '/projects' | '/projects/$slug'
+  to:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/projects'
+    | '/projects/$slug'
+    | '/api/public/hooks/sync-sheet'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/projects'
+    | '/projects/$slug'
+    | '/api/public/hooks/sync-sheet'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
+  ApiPublicHooksSyncSheetRoute: typeof ApiPublicHooksSyncSheetRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -115,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugRouteImport
       parentRoute: typeof ProjectsRoute
     }
+    '/api/public/hooks/sync-sheet': {
+      id: '/api/public/hooks/sync-sheet'
+      path: '/api/public/hooks/sync-sheet'
+      fullPath: '/api/public/hooks/sync-sheet'
+      preLoaderRoute: typeof ApiPublicHooksSyncSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -135,6 +171,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
+  ApiPublicHooksSyncSheetRoute: ApiPublicHooksSyncSheetRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
