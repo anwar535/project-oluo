@@ -202,11 +202,11 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} onOpen={setActive} />
+          <UnitsTable units={visible} columns={project.columns ?? []} onOpen={setActive} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} onClick={() => setActive(u)} />
+              <UnitCard key={u.id} unit={u} columns={project.columns ?? []} onClick={() => setActive(u)} />
             ))}
           </div>
         )}
