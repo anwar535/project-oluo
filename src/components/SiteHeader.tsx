@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import logo from "@/assets/logo.png";
+import { useAuth } from "@/lib/useAuth";
 
 export function SiteHeader() {
+  const { session, isAdmin } = useAuth();
   return (
     <header className="bg-navy text-navy-foreground sticky top-0 z-30 border-b border-white/5">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between gap-6">
@@ -31,6 +33,23 @@ export function SiteHeader() {
           >
             المشاريع
           </Link>
+          {session && isAdmin && (
+            <Link
+              to="/admin"
+              className="px-4 py-2 rounded-md hover:bg-white/5 hover:text-brand transition-colors"
+              activeProps={{ className: "text-brand bg-white/5" }}
+            >
+              لوحة التحكم
+            </Link>
+          )}
+          {!session && (
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-md hover:bg-white/5 hover:text-brand/70 transition-colors text-brand/70"
+            >
+              دخول
+            </Link>
+          )}
         </nav>
       </div>
     </header>
