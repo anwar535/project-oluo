@@ -9,13 +9,21 @@ const SHEET_ID = "1nSVfMa9OdZZUt9n9B-3CwX7KdjOqLOxy_5flkR2VfpU";
 
 const HEADER_MAP: Record<string, keyof UnitInput> = {
   unit_number: "unit_number", "رقم الوحدة": "unit_number", "رقم": "unit_number",
+  "رقم الوحدة / الفيلا": "unit_number", "رقم الفيلا": "unit_number", "رقم الشقة": "unit_number",
   area_m2: "area_m2", "المساحة": "area_m2", "مساحة الأرض": "area_m2",
+  "المساحة م٢": "area_m2", "المساحة م2": "area_m2", "المساحة م²": "area_m2",
   dimensions: "dimensions", "الأبعاد": "dimensions", "الابعاد": "dimensions",
+  "الأطوال": "dimensions", "الاطوال": "dimensions",
   built_area_m2: "built_area_m2", "البناء": "built_area_m2", "مساحة البناء": "built_area_m2",
-  price: "price", "السعر": "price",
-  features: "features", "المميزات": "features",
+  "مسطح البناء": "built_area_m2", "مسطح البناء م٢": "built_area_m2",
+  "مسطح البناء م2": "built_area_m2", "مسطح البناء م²": "built_area_m2",
+  price: "price", "السعر": "price", "سعر البيع": "price",
+  features: "features", "المميزات": "features", "أبرز المميزات": "features",
+  "أبرز المميزات ( كمثال واجهة / زاوية )": "features",
+  "ابرز المميزات": "features", "الملاحظات": "features",
   status: "status", "الحالة": "status",
   plan_image: "plan_image", "المخطط": "plan_image", "صورة المخطط": "plan_image",
+  "رابط صورة المخطط": "plan_image", "رابط المخطط": "plan_image",
 };
 
 type UnitInput = {
@@ -58,17 +66,32 @@ async function fetchTab(tab: string): Promise<UnitInput[]> {
   const csv = await res.text();
   const rows = parseCSV(csv);
   if (rows.length < 2) return [];
-  const headers = rows[0].map((h) => h.trim());
-  const fields = headers.map((h) => HEADER_MAP[h.toLowerCase()] ?? HEADER_MAP[h]);
+  const headers = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
+  const fields = headers.map(
+    (h) => HEADER_MAP[h] ?? HEADER_MAP[h.toLowerCase()],
+  );
   const units: UnitInput[] = [];
   for (const r of rows.slice(1)) {
     const u: any = {};
     fields.forEach((f, i) => {
-      if (f && r[i] != null) u[f] = r[i].trim();
+      if (f && r[i] != null) {
+        const val = r[i].trim();
+        if (val) u[f] = val;
+      }
     });
+    if (u.plan_image) u.plan_image = normalizeDriveUrl(u.plan_image);
     if (u.unit_number) units.push(u);
   }
   return units;
+}
+
+function normalizeDriveUrl(url: string): string {
+  // Convert Google Drive share links to direct image URLs
+  const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+  const q = url.match(/[?&]id=([\w-]+)/);
+  if (q && url.includes("drive.google.com")) return `https://drive.google.com/thumbnail?id=${q[1]}&sz=w1600`;
+  return url;
 }
 
 export const Route = createFileRoute("/api/public/hooks/sync-sheet")({
