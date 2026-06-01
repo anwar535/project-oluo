@@ -470,14 +470,19 @@ function UnitDialog({
             )}
 
             <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <DataBox label="المساحة م²" value={unit.area_m2} />
-              <DataBox label="الأطوال" value={unit.dimensions} />
-              <DataBox label="مسطح البناء م²" value={unit.built_area_m2} />
-              <DataBox
-                label="السعر"
-                value={unit.price}
-                accent={!!unit.price}
-              />
+              {(project.columns ?? [])
+                .filter((c) => c.field !== "features")
+                .map((c) => {
+                  const v = unitValue(unit, c);
+                  return (
+                    <DataBox
+                      key={c.label}
+                      label={c.label}
+                      value={v}
+                      accent={c.field === "price" && !!v}
+                    />
+                  );
+                })}
             </div>
 
             {unit.features && (
