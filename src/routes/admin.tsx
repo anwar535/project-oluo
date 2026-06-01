@@ -312,16 +312,22 @@ function AdminPage() {
                 </button>
               </div>
             </div>
+            {(() => {
+              const proj = projects.find((p) => p.id === selectedProject);
+              const dynCols = proj?.columns ?? [];
+              async function updateExtra(u: UnitRow, key: string, val: string) {
+                const nextExtra = { ...(u.extra ?? {}), [key]: val };
+                await updateUnit(u.id, { extra: nextExtra });
+              }
+              return (
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-xs text-right">
                 <thead className="bg-accent">
                   <tr>
                     <th className="px-2 py-2">الوحدة</th>
-                    <th className="px-2 py-2">المساحة</th>
-                    <th className="px-2 py-2">الأبعاد</th>
-                    <th className="px-2 py-2">البناء</th>
-                    <th className="px-2 py-2">السعر</th>
-                    <th className="px-2 py-2">المميزات</th>
+                    {dynCols.map((c) => (
+                      <th key={c} className="px-2 py-2 whitespace-nowrap">{c}</th>
+                    ))}
                     <th className="px-2 py-2">الحالة</th>
                     <th className="px-2 py-2">المخطط</th>
                     <th></th>
@@ -331,11 +337,13 @@ function AdminPage() {
                   {units.map((u) => (
                     <tr key={u.id} className="border-t border-border">
                       <EditableCell value={u.unit_number} onSave={(v) => updateUnit(u.id, { unit_number: v })} />
-                      <EditableCell value={u.area_m2 ?? ""} onSave={(v) => updateUnit(u.id, { area_m2: v })} />
-                      <EditableCell value={u.dimensions ?? ""} onSave={(v) => updateUnit(u.id, { dimensions: v })} />
-                      <EditableCell value={u.built_area_m2 ?? ""} onSave={(v) => updateUnit(u.id, { built_area_m2: v })} />
-                      <EditableCell value={u.price ?? ""} onSave={(v) => updateUnit(u.id, { price: v })} />
-                      <EditableCell value={u.features ?? ""} onSave={(v) => updateUnit(u.id, { features: v })} />
+                      {dynCols.map((c) => (
+                        <EditableCell
+                          key={c}
+                          value={u.extra?.[c] ?? ""}
+                          onSave={(v) => updateExtra(u, c, v)}
+                        />
+                      ))}
                       <td className="px-2 py-1">
                         <select
                           defaultValue={u.status}
@@ -371,11 +379,14 @@ function AdminPage() {
                     </tr>
                   ))}
                   {units.length === 0 && (
-                    <tr><td colSpan={9} className="p-6 text-center text-muted-foreground">لا توجد وحدات بعد.</td></tr>
+                    <tr><td colSpan={3 + dynCols.length + 1} className="p-6 text-center text-muted-foreground">لا توجد وحدات بعد. شغّل المزامنة من Google Sheet.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
+              );
+            })()}
+
           </section>
         )}
       </main>

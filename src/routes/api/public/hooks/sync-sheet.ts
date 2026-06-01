@@ -3,38 +3,39 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SHEET_ID = "1nSVfMa9OdZZUt9n9B-3CwX7KdjOqLOxy_5flkR2VfpU";
 
-// Expected sheet columns (header row, case-insensitive match):
-// unit_number | area_m2 | dimensions | built_area_m2 | price | features | status | plan_image
-// Arabic synonyms also accepted: رقم الوحدة | المساحة | الأبعاد | البناء | السعر | المميزات | الحالة | المخطط
+// Special header synonyms — these get mapped to dedicated columns.
+// Everything else is preserved verbatim as a dynamic column per project.
+const UNIT_NUMBER_KEYS = new Set([
+  "unit_number", "رقم الوحدة", "رقم", "رقم الوحدة / الفيلا",
+  "رقم الفيلا", "رقم الشقة",
+]);
+const STATUS_KEYS = new Set(["status", "الحالة"]);
+const PLAN_IMAGE_KEYS = new Set([
+  "plan_image", "المخطط", "صورة المخطط",
+  "رابط صورة المخطط", "رابط المخطط",
+]);
 
-const HEADER_MAP: Record<string, keyof UnitInput> = {
-  unit_number: "unit_number", "رقم الوحدة": "unit_number", "رقم": "unit_number",
-  "رقم الوحدة / الفيلا": "unit_number", "رقم الفيلا": "unit_number", "رقم الشقة": "unit_number",
-  area_m2: "area_m2", "المساحة": "area_m2", "مساحة الأرض": "area_m2",
-  "المساحة م٢": "area_m2", "المساحة م2": "area_m2", "المساحة م²": "area_m2",
-  dimensions: "dimensions", "الأبعاد": "dimensions", "الابعاد": "dimensions",
-  "الأطوال": "dimensions", "الاطوال": "dimensions",
-  built_area_m2: "built_area_m2", "البناء": "built_area_m2", "مساحة البناء": "built_area_m2",
-  "مسطح البناء": "built_area_m2", "مسطح البناء م٢": "built_area_m2",
-  "مسطح البناء م2": "built_area_m2", "مسطح البناء م²": "built_area_m2",
-  price: "price", "السعر": "price", "سعر البيع": "price",
-  features: "features", "المميزات": "features", "أبرز المميزات": "features",
-  "أبرز المميزات ( كمثال واجهة / زاوية )": "features",
-  "ابرز المميزات": "features", "الملاحظات": "features",
-  status: "status", "الحالة": "status",
-  plan_image: "plan_image", "المخطط": "plan_image", "صورة المخطط": "plan_image",
-  "رابط صورة المخطط": "plan_image", "رابط المخطط": "plan_image",
-};
+function isUnitNumberHeader(h: string) {
+  const n = h.trim().toLowerCase();
+  return [...UNIT_NUMBER_KEYS].some((k) => k.toLowerCase() === n);
+}
+function isStatusHeader(h: string) {
+  const n = h.trim().toLowerCase();
+  return [...STATUS_KEYS].some((k) => k.toLowerCase() === n);
+}
+function isPlanImageHeader(h: string) {
+  const n = h.trim().toLowerCase();
+  return [...PLAN_IMAGE_KEYS].some((k) => k.toLowerCase() === n);
+}
 
-type UnitInput = {
-  unit_number: string;
-  area_m2?: string;
-  dimensions?: string;
-  built_area_m2?: string;
-  price?: string;
-  features?: string;
-  status?: string;
-  plan_image?: string;
+type TabResult = {
+  columns: string[]; // ordered dynamic column labels (excluding special)
+  rows: Array<{
+    unit_number: string;
+    status?: string;
+    plan_image?: string;
+    extra: Record<string, string>;
+  }>;
 };
 
 function parseCSV(text: string): string[][] {
@@ -59,34 +60,7 @@ function parseCSV(text: string): string[][] {
   return rows.filter((r) => r.some((v) => v.trim() !== ""));
 }
 
-async function fetchTab(tab: string): Promise<UnitInput[]> {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const csv = await res.text();
-  const rows = parseCSV(csv);
-  if (rows.length < 2) return [];
-  const headers = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
-  const fields = headers.map(
-    (h) => HEADER_MAP[h] ?? HEADER_MAP[h.toLowerCase()],
-  );
-  const units: UnitInput[] = [];
-  for (const r of rows.slice(1)) {
-    const u: any = {};
-    fields.forEach((f, i) => {
-      if (f && r[i] != null) {
-        const val = r[i].trim();
-        if (val) u[f] = val;
-      }
-    });
-    if (u.plan_image) u.plan_image = normalizeDriveUrl(u.plan_image);
-    if (u.unit_number) units.push(u);
-  }
-  return units;
-}
-
 function normalizeDriveUrl(url: string): string {
-  // Convert Google Drive share links to direct image URLs
   const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/);
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
   const q = url.match(/[?&]id=([\w-]+)/);
@@ -94,12 +68,55 @@ function normalizeDriveUrl(url: string): string {
   return url;
 }
 
+async function fetchTab(tab: string): Promise<TabResult | null> {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const csv = await res.text();
+  const rows = parseCSV(csv);
+  if (rows.length < 2) return null;
+
+  const headers = rows[0].map((h) => h.trim().replace(/\s+/g, " "));
+  // Classify headers
+  type HeaderRole = "unit_number" | "status" | "plan_image" | "extra" | "skip";
+  const roles: HeaderRole[] = headers.map((h) => {
+    if (!h) return "skip";
+    if (isUnitNumberHeader(h)) return "unit_number";
+    if (isStatusHeader(h)) return "status";
+    if (isPlanImageHeader(h)) return "plan_image";
+    return "extra";
+  });
+
+  const dynamicColumns: string[] = [];
+  headers.forEach((h, i) => {
+    if (roles[i] === "extra" && !dynamicColumns.includes(h)) dynamicColumns.push(h);
+  });
+
+  const out: TabResult = { columns: dynamicColumns, rows: [] };
+  for (const r of rows.slice(1)) {
+    let unitNumber = "";
+    let status: string | undefined;
+    let planImage: string | undefined;
+    const extra: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      const val = (r[i] ?? "").trim();
+      if (!val) return;
+      const role = roles[i];
+      if (role === "unit_number") unitNumber = val;
+      else if (role === "status") status = val;
+      else if (role === "plan_image") planImage = normalizeDriveUrl(val);
+      else if (role === "extra") extra[h] = val;
+    });
+    if (unitNumber) {
+      out.rows.push({ unit_number: unitNumber, status, plan_image: planImage, extra });
+    }
+  }
+  return out;
+}
+
 export const Route = createFileRoute("/api/public/hooks/sync-sheet")({
   server: {
-    handlers: {
-      POST: handler,
-      GET: handler,
-    },
+    handlers: { POST: handler, GET: handler },
   },
 });
 
@@ -111,15 +128,20 @@ async function handler() {
   const { data: projects, error } = await supabaseAdmin
     .from("projects")
     .select("id, sheet_tab");
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return Response.json({ error: error.message }, { status: 500 });
 
   for (const p of projects ?? []) {
     const tab = p.sheet_tab || p.id;
     try {
-      const units = await fetchTab(tab);
-      if (units.length === 0) continue;
+      const result = await fetchTab(tab);
+      if (!result) continue;
+
+      // Persist the dynamic column schema on the project
+      const { error: pErr } = await supabaseAdmin
+        .from("projects")
+        .update({ columns: result.columns })
+        .eq("id", p.id);
+      if (pErr) errors.push(`columns ${p.id}: ${pErr.message}`);
 
       const { data: existing } = await supabaseAdmin
         .from("units")
@@ -129,23 +151,18 @@ async function handler() {
         (existing ?? []).map((u: any) => [u.unit_number, u.id]),
       );
 
-      for (let i = 0; i < units.length; i++) {
-        const u = units[i];
-        const payload = {
+      for (let i = 0; i < result.rows.length; i++) {
+        const u = result.rows[i];
+        const payload: any = {
           project_id: p.id,
           unit_number: u.unit_number,
-          area_m2: u.area_m2 ?? null,
-          dimensions: u.dimensions ?? null,
-          built_area_m2: u.built_area_m2 ?? null,
-          price: u.price ?? null,
-          features: u.features ?? null,
           status: u.status || "متاح",
           plan_image: u.plan_image || null,
+          extra: u.extra,
           sort_order: i,
         };
         const existingId = existingMap.get(u.unit_number);
         if (existingId) {
-          // Don't overwrite plan_image if sheet doesn't provide one
           const patch: any = { ...payload };
           if (!u.plan_image) delete patch.plan_image;
           const { error: e } = await supabaseAdmin
