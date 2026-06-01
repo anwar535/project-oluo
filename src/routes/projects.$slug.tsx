@@ -20,7 +20,7 @@ export const Route = createFileRoute("/projects/$slug")({
       .eq("slug", params.slug)
       .maybeSingle();
     if (error || !data) throw notFound();
-    return { project: data as ProjectRow };
+    return { project: data as unknown as ProjectRow };
   },
   head: ({ loaderData }) => ({
     meta: [

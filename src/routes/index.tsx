@@ -33,7 +33,7 @@ function HomePage() {
         .select("*")
         .order("sort_order");
       if (error) throw error;
-      return data as ProjectRow[];
+      return data as unknown as ProjectRow[];
     },
   });
 
