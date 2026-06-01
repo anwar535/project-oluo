@@ -289,16 +289,28 @@ function AdminPage() {
 
         {selectedProject && (
           <section>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h2 className="text-lg font-bold">
                 وحدات مشروع {selectedProject}
               </h2>
-              <button
-                onClick={addUnit}
-                className="px-3 py-1.5 rounded-lg bg-navy text-navy-foreground text-xs"
-              >
-                + إضافة وحدة
-              </button>
+              <div className="flex items-center gap-2">
+                <label className="px-3 py-1.5 rounded-lg bg-brand text-white text-xs cursor-pointer">
+                  رفع متعدد للمخططات
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => e.target.files && bulkUploadPlans(e.target.files)}
+                  />
+                </label>
+                <button
+                  onClick={addUnit}
+                  className="px-3 py-1.5 rounded-lg bg-navy text-navy-foreground text-xs"
+                >
+                  + إضافة وحدة
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <table className="w-full text-xs text-right">
