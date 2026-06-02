@@ -519,14 +519,18 @@ function UnitDialog({
 
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-                {dataCols.map((c) => (
-                  <DataBox
-                    key={c}
-                    label={c}
-                    value={unit.extra?.[c] ?? null}
-                    accent={isPriceCol(c) && !!unit.extra?.[c]}
-                  />
-                ))}
+                {dataCols.map((c) => {
+                  const isPrice = isPriceCol(c);
+                  const hide = isPrice && statusStyle(unit.status).hidePrice;
+                  return (
+                    <DataBox
+                      key={c}
+                      label={c}
+                      value={hide ? "—" : unit.extra?.[c] ?? null}
+                      accent={isPrice && !hide && !!unit.extra?.[c]}
+                    />
+                  );
+                })}
               </div>
             )}
 
