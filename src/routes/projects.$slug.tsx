@@ -286,15 +286,6 @@ function ProjectPage() {
         </div>
       </section>
 
-      <footer className="border-t border-border bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-5 text-[12px] leading-7 text-muted-foreground text-right">
-          <p>• تسري الأسعار حتى تاريخ 2026/06/30.</p>
-          <p>
-            • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في
-            الوثائق الصادرة من الجهات الرسمية.
-          </p>
-        </div>
-      </footer>
 
       <UnitDialog
         unit={active}
