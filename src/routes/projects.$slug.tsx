@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { List, LayoutGrid } from "lucide-react";
+import { List, LayoutGrid, Phone, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
 
 // Status-driven visual treatment for a unit row/card
@@ -29,6 +30,9 @@ function statusStyle(status: string) {
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
+  validateSearch: (s: Record<string, unknown>) => ({
+    c: s.c === "1" || s.c === 1 ? 1 : undefined,
+  }),
   loader: async ({ params }) => {
     const { data, error } = await supabase
       .from("projects")
@@ -61,6 +65,21 @@ export const Route = createFileRoute("/projects/$slug")({
 const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع", "غير متاح"] as const;
 const CONTACT_PHONES = ["0570020095", "0570020093", "0554745500"];
 
+// Normalize a local Saudi number (05XXXXXXXX) to international form 9665XXXXXXXX (no plus, no leading 0)
+function toIntl(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("966")) return digits;
+  if (digits.startsWith("0")) return "966" + digits.slice(1);
+  return "966" + digits;
+}
+function telHref(phone: string) {
+  return `tel:+${toIntl(phone)}`;
+}
+function waHref(phone: string, text?: string) {
+  const base = `https://wa.me/${toIntl(phone)}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
+}
+
 // Heuristics for special-styled columns (highlight price, etc.)
 function isPriceCol(label: string) {
   return /سعر|price/i.test(label);
@@ -71,12 +90,20 @@ function isFeaturesCol(label: string) {
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const clientMode = search.c === 1;
   const columns = project.columns ?? [];
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
-  const [search, setSearch] = useState("");
+  const [search_, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "table">("table");
   const [active, setActive] = useState<UnitRow | null>(null);
+  const isMobile = useIsMobile();
+
+  // Auto-switch to grid/cards on mobile for better touch UX
+  useEffect(() => {
+    if (isMobile) setView("grid");
+  }, [isMobile]);
 
   const { data: units = [], isLoading } = useQuery({
     queryKey: ["units", project.id],
@@ -98,13 +125,13 @@ function ProjectPage() {
     () =>
       units.filter((u) => {
         if (statusFilter !== "كل الحالات" && u.status !== statusFilter) return false;
-        if (search) {
+        if (search_) {
           const hay = `${u.unit_number} ${Object.values(u.extra ?? {}).join(" ")}`.toLowerCase();
-          if (!hay.includes(search.toLowerCase())) return false;
+          if (!hay.includes(search_.toLowerCase())) return false;
         }
         return true;
       }),
-    [units, statusFilter, search],
+    [units, statusFilter, search_],
   );
 
   const counts = useMemo(
@@ -117,24 +144,51 @@ function ProjectPage() {
     [units],
   );
 
+  // Compose primary title: "مشروع <name>" unless name already starts with "مشروع"
+  const primaryTitle = /^مشروع/.test(project.name)
+    ? project.name
+    : `مشروع ${project.name}`;
+  const categoryAr = project.category === "Villas" ? "فلل" : "شقق";
+  const subTitle =
+    project.tagline ||
+    [
+      categoryAr,
+      project.district ? `حي ${project.district}` : null,
+      "الرياض",
+    ]
+      .filter(Boolean)
+      .join(" - ");
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SiteHeader />
+      {!clientMode && <SiteHeader />}
 
-      <section className="mx-auto max-w-7xl px-6 pt-12 pb-6 text-center">
-        <Link to="/" className="text-xs text-brand hover:underline">
-          ← الرئيسية
-        </Link>
-        <p className="text-brand uppercase tracking-[0.3em] text-xs mt-3 mb-2">
-          {project.category === "Villas" ? "فلل" : "شقق"}
-          {project.district ? ` • ${project.district}` : ""}
-        </p>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-navy">
-          {project.name}
-        </h1>
-        {project.tagline && (
-          <p className="mt-4 text-muted-foreground">{project.tagline}</p>
+      {/* Disclaimer notes banner at top */}
+      <div className="bg-navy/95 text-navy-foreground border-b border-border">
+        <div className="mx-auto max-w-7xl px-6 py-3 text-center">
+          <div className="text-[11px] uppercase tracking-[0.3em] text-brand mb-1">
+            للحجز والاستفسار
+          </div>
+          <p className="text-xs sm:text-sm leading-6 opacity-90">
+            • تسري الأسعار حتى تاريخ 2026/06/30. • جميع المعلومات المذكورة
+            تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات
+            الرسمية.
+          </p>
+        </div>
+      </div>
+
+      <section className="mx-auto max-w-7xl px-6 pt-10 pb-6 text-center">
+        {!clientMode && (
+          <Link to="/" className="text-xs text-brand hover:underline">
+            ← الرئيسية
+          </Link>
         )}
+        <h1 className="mt-3 text-4xl md:text-5xl font-black tracking-tight text-navy">
+          {primaryTitle}
+        </h1>
+        <p className="mt-3 text-base md:text-lg text-muted-foreground">
+          {subTitle}
+        </p>
         {units.length > 0 && (
           <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
             <Stat label="الإجمالي" value={counts.total} />
@@ -165,7 +219,7 @@ function ProjectPage() {
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
-              value={search}
+              value={search_}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ابحث برقم الوحدة أو أي بيان..."
               className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
@@ -247,15 +301,6 @@ function ProjectPage() {
         </div>
       </section>
 
-      <footer className="border-t border-border bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-5 text-[12px] leading-7 text-muted-foreground text-right">
-          <p>• تسري الأسعار حتى تاريخ 2026/06/30.</p>
-          <p>
-            • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في
-            الوثائق الصادرة من الجهات الرسمية.
-          </p>
-        </div>
-      </footer>
 
       <UnitDialog
         unit={active}
@@ -454,20 +499,22 @@ function Pair({ label, value }: { label: string; value: React.ReactNode }) {
 function ContactCard({ phone }: { phone: string }) {
   return (
     <div className="bg-card rounded-xl border border-border p-5 text-center">
-      <div className="text-xl font-bold tracking-wider">{phone}</div>
+      <div className="text-xl font-bold tracking-wider" dir="ltr">{phone}</div>
       <div className="mt-4 flex justify-center gap-2">
         <a
-          href={`tel:${phone}`}
-          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition"
+          href={telHref(phone)}
+          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition inline-flex items-center gap-1.5"
         >
+          <Phone className="w-4 h-4" />
           اتصال
         </a>
         <a
-          href={`https://wa.me/966${phone.slice(1)}`}
+          href={waHref(phone)}
           target="_blank"
-          rel="noreferrer"
-          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition"
+          rel="noopener noreferrer"
+          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition inline-flex items-center gap-1.5"
         >
+          <MessageCircle className="w-4 h-4" />
           واتساب
         </a>
       </div>
@@ -486,11 +533,6 @@ function UnitDialog({
   onClose: () => void;
   project: ProjectRow;
 }) {
-  const waText = unit
-    ? encodeURIComponent(
-        `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}`,
-      )
-    : "";
   const primaryPhone = CONTACT_PHONES[0];
 
   const dataCols = unit
@@ -558,33 +600,19 @@ function UnitDialog({
 
             <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
               <a
-                href={`https://wa.me/966${primaryPhone.slice(1)}?text=${waText}`}
+                href={waHref(primaryPhone, unit ? `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}` : undefined)}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.945C.16 5.335 5.495 0 12.05 0a11.81 11.81 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.978-.607z" />
-                </svg>
+                <MessageCircle className="w-5 h-5" />
                 تواصل واتساب
               </a>
               <a
-                href={`tel:${primaryPhone}`}
+                href={telHref(primaryPhone)}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-navy text-navy-foreground font-medium hover:bg-navy/90 transition"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  className="w-5 h-5"
-                >
-                  <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.02-.24 11.36 11.36 0 003.57.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.24 1.02l-2.21 2.2z" />
-                </svg>
+                <Phone className="w-5 h-5" />
                 اتصل بنا
               </a>
             </div>

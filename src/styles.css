@@ -80,7 +80,7 @@ html, body, .font-arabic, button, input, select, textarea {
   --radius: 0.625rem;
   --brand: oklch(0.72 0.11 70);
   --brand-foreground: oklch(0.18 0.04 260);
-  --navy: oklch(0.22 0.045 260);
+  --navy: oklch(0 0 0);
   --navy-foreground: oklch(0.97 0.01 80);
   --background: oklch(0.99 0.005 80);
   --foreground: oklch(0.18 0.015 60);
