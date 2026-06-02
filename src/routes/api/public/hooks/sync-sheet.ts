@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const SHEET_ID = "1nSVfMa9OdZZUt9n9B-3CwX7KdjOqLOxy_5flkR2VfpU";
+const SHEET_ID = "1x3IImxiEZmrB5-cx3AUlTNGUdyoe-40RWHgvvAjc4UI";
 
 // Special header synonyms — these get mapped to dedicated columns.
 // Everything else is preserved verbatim as a dynamic column per project.
