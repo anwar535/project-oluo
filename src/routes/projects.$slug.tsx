@@ -204,7 +204,7 @@ function ProjectPage() {
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
-              value={search}
+              value={search_}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ابحث برقم الوحدة أو أي بيان..."
               className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
