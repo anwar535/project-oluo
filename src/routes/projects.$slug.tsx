@@ -268,14 +268,15 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} columns={columns} onOpen={setActive} />
+          <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} columns={columns} onClick={() => setActive(u)} />
+              <UnitCard key={u.id} unit={u} columns={publicColumns} onClick={() => setActive(u)} />
             ))}
           </div>
         )}
+
       </main>
 
       {/* Mandatory disclaimer notes — directly under the tables */}
