@@ -559,6 +559,19 @@ function UnitDialog({
               </a>
             )}
 
+            {videoUrl && (
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
+              >
+                <Video className="w-5 h-5" />
+                مشاهدة فيديو 3D للوحدة
+              </a>
+            )}
+
+
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {dataCols.map((c) => {
