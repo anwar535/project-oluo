@@ -65,6 +65,21 @@ export const Route = createFileRoute("/projects/$slug")({
 const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع", "غير متاح"] as const;
 const CONTACT_PHONES = ["0570020095", "0570020093", "0554745500"];
 
+// Normalize a local Saudi number (05XXXXXXXX) to international form 9665XXXXXXXX (no plus, no leading 0)
+function toIntl(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("966")) return digits;
+  if (digits.startsWith("0")) return "966" + digits.slice(1);
+  return "966" + digits;
+}
+function telHref(phone: string) {
+  return `tel:+${toIntl(phone)}`;
+}
+function waHref(phone: string, text?: string) {
+  const base = `https://wa.me/${toIntl(phone)}`;
+  return text ? `${base}?text=${encodeURIComponent(text)}` : base;
+}
+
 // Heuristics for special-styled columns (highlight price, etc.)
 function isPriceCol(label: string) {
   return /سعر|price/i.test(label);
