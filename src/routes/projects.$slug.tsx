@@ -75,12 +75,20 @@ function isFeaturesCol(label: string) {
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
+  const search = Route.useSearch();
+  const clientMode = search.c === 1;
   const columns = project.columns ?? [];
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
-  const [search, setSearch] = useState("");
+  const [search_, setSearch] = useState("");
   const [view, setView] = useState<"grid" | "table">("table");
   const [active, setActive] = useState<UnitRow | null>(null);
+  const isMobile = useIsMobile();
+
+  // Auto-switch to grid/cards on mobile for better touch UX
+  useEffect(() => {
+    if (isMobile) setView("grid");
+  }, [isMobile]);
 
   const { data: units = [], isLoading } = useQuery({
     queryKey: ["units", project.id],
@@ -102,13 +110,13 @@ function ProjectPage() {
     () =>
       units.filter((u) => {
         if (statusFilter !== "كل الحالات" && u.status !== statusFilter) return false;
-        if (search) {
+        if (search_) {
           const hay = `${u.unit_number} ${Object.values(u.extra ?? {}).join(" ")}`.toLowerCase();
-          if (!hay.includes(search.toLowerCase())) return false;
+          if (!hay.includes(search_.toLowerCase())) return false;
         }
         return true;
       }),
-    [units, statusFilter, search],
+    [units, statusFilter, search_],
   );
 
   const counts = useMemo(
@@ -121,24 +129,51 @@ function ProjectPage() {
     [units],
   );
 
+  // Compose primary title: "مشروع <name>" unless name already starts with "مشروع"
+  const primaryTitle = /^مشروع/.test(project.name)
+    ? project.name
+    : `مشروع ${project.name}`;
+  const categoryAr = project.category === "Villas" ? "فلل" : "شقق";
+  const subTitle =
+    project.tagline ||
+    [
+      categoryAr,
+      project.district ? `حي ${project.district}` : null,
+      "الرياض",
+    ]
+      .filter(Boolean)
+      .join(" - ");
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SiteHeader />
+      {!clientMode && <SiteHeader />}
 
-      <section className="mx-auto max-w-7xl px-6 pt-12 pb-6 text-center">
-        <Link to="/" className="text-xs text-brand hover:underline">
-          ← الرئيسية
-        </Link>
-        <p className="text-brand uppercase tracking-[0.3em] text-xs mt-3 mb-2">
-          {project.category === "Villas" ? "فلل" : "شقق"}
-          {project.district ? ` • ${project.district}` : ""}
-        </p>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-navy">
-          {project.name}
-        </h1>
-        {project.tagline && (
-          <p className="mt-4 text-muted-foreground">{project.tagline}</p>
+      {/* Disclaimer notes banner at top */}
+      <div className="bg-navy/95 text-navy-foreground border-b border-border">
+        <div className="mx-auto max-w-7xl px-6 py-3 text-center">
+          <div className="text-[11px] uppercase tracking-[0.3em] text-brand mb-1">
+            للحجز والاستفسار
+          </div>
+          <p className="text-xs sm:text-sm leading-6 opacity-90">
+            • تسري الأسعار حتى تاريخ 2026/06/30. • جميع المعلومات المذكورة
+            تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات
+            الرسمية.
+          </p>
+        </div>
+      </div>
+
+      <section className="mx-auto max-w-7xl px-6 pt-10 pb-6 text-center">
+        {!clientMode && (
+          <Link to="/" className="text-xs text-brand hover:underline">
+            ← الرئيسية
+          </Link>
         )}
+        <h1 className="mt-3 text-4xl md:text-5xl font-black tracking-tight text-navy">
+          {primaryTitle}
+        </h1>
+        <p className="mt-3 text-base md:text-lg text-muted-foreground">
+          {subTitle}
+        </p>
         {units.length > 0 && (
           <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
             <Stat label="الإجمالي" value={counts.total} />
