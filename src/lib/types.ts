@@ -30,4 +30,4 @@ export const PROJECT_STATUSES = [
   "مُباع بالكامل",
 ] as const;
 
-export const UNIT_STATUSES = ["متاح", "محجوز", "مباع"] as const;
+export const UNIT_STATUSES = ["متاح", "محجوز", "مباع", "غير متاح"] as const;

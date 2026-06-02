@@ -89,6 +89,9 @@ function ProjectPage() {
       if (error) throw error;
       return data as UnitRow[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const visible = useMemo(
