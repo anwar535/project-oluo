@@ -29,9 +29,6 @@ function statusStyle(status: string) {
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
-  validateSearch: (s: Record<string, unknown>) => ({
-    c: s.c === "1" || s.c === 1 ? 1 : undefined,
-  }),
   loader: async ({ params }) => {
     const { data, error } = await supabase
       .from("projects")
