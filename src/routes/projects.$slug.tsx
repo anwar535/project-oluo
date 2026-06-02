@@ -89,8 +89,6 @@ function isVideoCol(label: string) {
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
-  const search = Route.useSearch();
-  const clientMode = search.c === 1;
   const columns = project.columns ?? [];
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
