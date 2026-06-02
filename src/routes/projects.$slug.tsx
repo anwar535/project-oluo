@@ -519,11 +519,15 @@ function UnitDialog({
   const primaryPhone = CONTACT_PHONES[0];
 
   const dataCols = unit
-    ? columns.filter((c) => !isFeaturesCol(c))
+    ? columns.filter((c) => !isFeaturesCol(c) && !isVideoCol(c))
     : [];
   const featureCols = unit
     ? columns.filter((c) => isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
     : [];
+  const videoCol = unit
+    ? columns.find((c) => isVideoCol(c) && (unit.extra?.[c] ?? "").trim().length > 0)
+    : undefined;
+  const videoUrl = videoCol && unit ? unit.extra?.[videoCol] : undefined;
 
   return (
     <Dialog open={!!unit} onOpenChange={(o) => !o && onClose()}>
