@@ -60,8 +60,8 @@ function AdminPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "خطأ في المزامنة");
       setSyncMsg(`تمت المزامنة: ${json.inserted} جديد، ${json.updated} محدث`);
-      qc.invalidateQueries({ queryKey: ["admin-projects"] });
-      qc.invalidateQueries({ queryKey: ["admin-units"] });
+      await qc.invalidateQueries();
+      await refetchUnits();
     } catch (e: any) {
       setSyncMsg("فشل المزامنة: " + e.message);
     } finally {
