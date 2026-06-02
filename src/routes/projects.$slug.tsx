@@ -381,6 +381,7 @@ function UnitCard({
   columns: string[];
   onClick: () => void;
 }) {
+  const s = statusStyle(unit.status);
   // Show up to first 3 non-features columns + price if present
   const featured = columns
     .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
@@ -388,32 +389,41 @@ function UnitCard({
   return (
     <button
       onClick={onClick}
-      className="text-right bg-card rounded-xl border border-border p-5 hover:border-brand hover:shadow-md transition-all"
+      className={`relative text-right bg-card rounded-xl border-2 ${s.border} p-5 hover:shadow-md transition-all overflow-hidden`}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs text-muted-foreground">رقم الوحدة</div>
-          <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
+      {s.overlay && (
+        <div className={`absolute inset-0 pointer-events-none ${s.overlay}`} />
+      )}
+      <div className="relative">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">رقم الوحدة</div>
+            <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
+          </div>
+          <StatusPill status={unit.status} />
         </div>
-        <StatusPill status={unit.status} />
-      </div>
-      <dl className="mt-4 space-y-2 text-sm">
-        {featured.map((c) => (
-          <Pair
-            key={c}
-            label={c}
-            value={
-              isPriceCol(c) ? (
-                <span className="text-brand font-bold">{unit.extra[c]}</span>
-              ) : (
-                unit.extra[c]
-              )
-            }
-          />
-        ))}
-      </dl>
-      <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
-        عرض التفاصيل ←
+        <dl className="mt-4 space-y-2 text-sm">
+          {featured.map((c) => (
+            <Pair
+              key={c}
+              label={c}
+              value={
+                isPriceCol(c) ? (
+                  s.hidePrice ? (
+                    <span className="text-muted-foreground italic">—</span>
+                  ) : (
+                    <span className="text-brand font-bold">{unit.extra[c]}</span>
+                  )
+                ) : (
+                  unit.extra[c]
+                )
+              }
+            />
+          ))}
+        </dl>
+        <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
+          عرض التفاصيل ←
+        </div>
       </div>
     </button>
   );
