@@ -1,14 +1,13 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { List, LayoutGrid, Phone, MessageCircle } from "lucide-react";
+import { List, LayoutGrid, Phone, MessageCircle, Video } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
@@ -30,9 +29,6 @@ function statusStyle(status: string) {
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
-  validateSearch: (s: Record<string, unknown>) => ({
-    c: s.c === "1" || s.c === 1 ? 1 : undefined,
-  }),
   loader: async ({ params }) => {
     const { data, error } = await supabase
       .from("projects")
@@ -87,11 +83,12 @@ function isPriceCol(label: string) {
 function isFeaturesCol(label: string) {
   return /مميزات|ميزة|ملاحظ|features|notes/i.test(label);
 }
+function isVideoCol(label: string) {
+  return /فيديو|video|3d/i.test(label);
+}
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
-  const search = Route.useSearch();
-  const clientMode = search.c === 1;
   const columns = project.columns ?? [];
   const [statusFilter, setStatusFilter] =
     useState<(typeof STATUS_OPTS)[number]>("كل الحالات");
@@ -144,50 +141,27 @@ function ProjectPage() {
     [units],
   );
 
-  // Compose primary title: "مشروع <name>" unless name already starts with "مشروع"
+  // Title block
   const primaryTitle = /^مشروع/.test(project.name)
     ? project.name
     : `مشروع ${project.name}`;
-  const categoryAr = project.category === "Villas" ? "فلل" : "شقق";
-  const subTitle =
-    project.tagline ||
-    [
-      categoryAr,
-      project.district ? `حي ${project.district}` : null,
-      "الرياض",
-    ]
-      .filter(Boolean)
-      .join(" - ");
+  const complexLabel =
+    project.category === "Villas" ? "مجمع فلل فاخرة" : "مجمع شقق سكنية فاخرة";
+  const districtLine = project.district
+    ? `حي ${project.district} - الرياض`
+    : "الرياض";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {!clientMode && <SiteHeader />}
-
-      {/* Disclaimer notes banner at top */}
-      <div className="bg-navy/95 text-navy-foreground border-b border-border">
-        <div className="mx-auto max-w-7xl px-6 py-3 text-center">
-          <div className="text-[11px] uppercase tracking-[0.3em] text-brand mb-1">
-            للحجز والاستفسار
-          </div>
-          <p className="text-xs sm:text-sm leading-6 opacity-90">
-            • تسري الأسعار حتى تاريخ 2026/06/30. • جميع المعلومات المذكورة
-            تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات
-            الرسمية.
-          </p>
-        </div>
-      </div>
-
       <section className="mx-auto max-w-7xl px-6 pt-10 pb-6 text-center">
-        {!clientMode && (
-          <Link to="/" className="text-xs text-brand hover:underline">
-            ← الرئيسية
-          </Link>
-        )}
-        <h1 className="mt-3 text-4xl md:text-5xl font-black tracking-tight text-navy">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-navy">
           {primaryTitle}
         </h1>
-        <p className="mt-3 text-base md:text-lg text-muted-foreground">
-          {subTitle}
+        <p className="mt-3 text-base md:text-lg font-semibold text-foreground/90">
+          {complexLabel}
+        </p>
+        <p className="mt-1 text-sm md:text-base text-muted-foreground">
+          {districtLine}
         </p>
         {units.length > 0 && (
           <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
@@ -265,7 +239,7 @@ function ProjectPage() {
         )}
       </section>
 
-      <main className="mx-auto max-w-7xl px-6 pb-16 mt-6">
+      <main className="mx-auto max-w-7xl px-6 pb-6 mt-6">
         {isLoading ? (
           <p className="text-center text-muted-foreground py-10">جاري التحميل...</p>
         ) : units.length === 0 ? (
@@ -287,7 +261,16 @@ function ProjectPage() {
         )}
       </main>
 
-      <section className="bg-muted/40 border-t border-border">
+      {/* Mandatory disclaimer notes — directly under the tables */}
+      <section className="mx-auto max-w-7xl px-6">
+        <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 text-xs sm:text-sm leading-7 text-muted-foreground text-center">
+          • تسري الأسعار حتى تاريخ 2026/06/30. <br className="sm:hidden" />
+          • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
+        </div>
+      </section>
+
+      {/* Contact section — at the very bottom */}
+      <section className="bg-muted/40 border-t border-border mt-10">
         <div className="mx-auto max-w-5xl px-6 py-12">
           <h2 className="text-center text-2xl font-bold text-navy">
             للحجز والاستفسار
@@ -536,11 +519,15 @@ function UnitDialog({
   const primaryPhone = CONTACT_PHONES[0];
 
   const dataCols = unit
-    ? columns.filter((c) => !isFeaturesCol(c))
+    ? columns.filter((c) => !isFeaturesCol(c) && !isVideoCol(c))
     : [];
   const featureCols = unit
     ? columns.filter((c) => isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
     : [];
+  const videoCol = unit
+    ? columns.find((c) => isVideoCol(c) && (unit.extra?.[c] ?? "").trim().length > 0)
+    : undefined;
+  const videoUrl = videoCol && unit ? unit.extra?.[videoCol] : undefined;
 
   return (
     <Dialog open={!!unit} onOpenChange={(o) => !o && onClose()}>
@@ -571,6 +558,19 @@ function UnitDialog({
                 />
               </a>
             )}
+
+            {videoUrl && (
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
+              >
+                <Video className="w-5 h-5" />
+                مشاهدة فيديو 3D للوحدة
+              </a>
+            )}
+
 
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
