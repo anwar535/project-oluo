@@ -181,23 +181,27 @@ function ProjectPage() {
             <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setView("table")}
-                className={`px-4 h-11 text-sm transition ${
+                aria-label="عرض الجدول"
+                title="عرض الجدول"
+                className={`px-4 h-11 inline-flex items-center justify-center transition ${
                   view === "table"
                     ? "bg-navy text-navy-foreground"
                     : "hover:bg-muted"
                 }`}
               >
-                جدول
+                <List className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setView("grid")}
-                className={`px-4 h-11 text-sm transition ${
+                aria-label="عرض الشبكة"
+                title="عرض الشبكة"
+                className={`px-4 h-11 inline-flex items-center justify-center transition ${
                   view === "grid"
                     ? "bg-navy text-navy-foreground"
                     : "hover:bg-muted"
                 }`}
               >
-                شبكة
+                <LayoutGrid className="w-5 h-5" />
               </button>
             </div>
           </div>
