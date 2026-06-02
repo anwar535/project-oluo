@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Oluo Project" },
+      { name: "description", content: "Project Showcase Creator displays project details, floor plans, and pricing, syncing automatically with Google Sheets." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Oluo Project" },
+      { property: "og:description", content: "Project Showcase Creator displays project details, floor plans, and pricing, syncing automatically with Google Sheets." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Oluo Project" },
+      { name: "twitter:description", content: "Project Showcase Creator displays project details, floor plans, and pricing, syncing automatically with Google Sheets." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/10e38c94-e076-42f6-99c5-7be6bd14e43f/id-preview-be9d9d6a--081146dd-e7d0-497b-afaa-85222ece7a16.lovable.app-1780391856933.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/10e38c94-e076-42f6-99c5-7be6bd14e43f/id-preview-be9d9d6a--081146dd-e7d0-497b-afaa-85222ece7a16.lovable.app-1780391856933.png" },
     ],
     links: [
       {
