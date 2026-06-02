@@ -1,7 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { List, LayoutGrid } from "lucide-react";
+import { List, LayoutGrid, Phone, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
 
 // Status-driven visual treatment for a unit row/card
