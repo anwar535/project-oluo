@@ -499,20 +499,22 @@ function Pair({ label, value }: { label: string; value: React.ReactNode }) {
 function ContactCard({ phone }: { phone: string }) {
   return (
     <div className="bg-card rounded-xl border border-border p-5 text-center">
-      <div className="text-xl font-bold tracking-wider">{phone}</div>
+      <div className="text-xl font-bold tracking-wider" dir="ltr">{phone}</div>
       <div className="mt-4 flex justify-center gap-2">
         <a
-          href={`tel:${phone}`}
-          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition"
+          href={telHref(phone)}
+          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition inline-flex items-center gap-1.5"
         >
+          <Phone className="w-4 h-4" />
           اتصال
         </a>
         <a
-          href={`https://wa.me/966${phone.slice(1)}`}
+          href={waHref(phone)}
           target="_blank"
-          rel="noreferrer"
-          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition"
+          rel="noopener noreferrer"
+          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition inline-flex items-center gap-1.5"
         >
+          <MessageCircle className="w-4 h-4" />
           واتساب
         </a>
       </div>
