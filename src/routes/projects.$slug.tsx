@@ -153,9 +153,10 @@ function ProjectPage() {
 
   // Columns visible in tables/cards — video links are hidden everywhere except the unit dialog
   const publicColumns = useMemo(
-    () => columns.filter((c) => !isVideoCol(c)),
+    () => columns.filter((c: string) => !isVideoCol(c)),
     [columns],
   );
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
