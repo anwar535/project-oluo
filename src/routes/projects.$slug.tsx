@@ -86,6 +86,9 @@ function isPriceCol(label: string) {
 function isFeaturesCol(label: string) {
   return /مميزات|ميزة|ملاحظ|features|notes/i.test(label);
 }
+function isVideoCol(label: string) {
+  return /فيديو|video|3d/i.test(label);
+}
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
