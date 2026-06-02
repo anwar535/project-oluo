@@ -533,11 +533,6 @@ function UnitDialog({
   onClose: () => void;
   project: ProjectRow;
 }) {
-  const waText = unit
-    ? encodeURIComponent(
-        `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}`,
-      )
-    : "";
   const primaryPhone = CONTACT_PHONES[0];
 
   const dataCols = unit
