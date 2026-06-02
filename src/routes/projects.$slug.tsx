@@ -303,63 +303,69 @@ function UnitsTable({
   onOpen: (u: UnitRow) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full text-sm text-right">
-        <thead className="bg-muted/60 text-muted-foreground">
+    <div className="overflow-x-auto">
+      <table
+        className="w-full text-sm text-right border-separate"
+        style={{ borderSpacing: "0 10px" }}
+      >
+        <thead className="text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 font-medium whitespace-nowrap">رقم الوحدة</th>
+            <th className="px-4 py-2 font-medium whitespace-nowrap">رقم الوحدة</th>
             {columns.map((c) => (
-              <th key={c} className="px-4 py-3 font-medium whitespace-nowrap">
+              <th key={c} className="px-4 py-2 font-medium whitespace-nowrap">
                 {c}
               </th>
             ))}
-            <th className="px-4 py-3 font-medium">الحالة</th>
-            <th className="px-4 py-3 font-medium"></th>
+            <th className="px-4 py-2 font-medium">الحالة</th>
+            <th className="px-4 py-2 font-medium"></th>
           </tr>
         </thead>
         <tbody>
-          {units.map((u) => (
-            <tr
-              key={u.id}
-              className="border-t border-border hover:bg-muted/30 transition"
-            >
-              <td className="px-4 py-3 font-bold">{u.unit_number}</td>
-              {columns.map((c) => {
-                const val = u.extra?.[c];
-                if (isPriceCol(c)) {
+          {units.map((u) => {
+            const s = statusStyle(u.status);
+            const cellBase = `py-3 bg-card ${s.overlay} border-y border-r-0 border-l-0 first:border-r-4 last:border-l first:rounded-r-xl last:rounded-l-xl ${s.border}`;
+            return (
+              <tr key={u.id} className="transition hover:opacity-95">
+                <td className={`${cellBase} px-4 font-bold`}>{u.unit_number}</td>
+                {columns.map((c) => {
+                  const val = u.extra?.[c];
+                  if (isPriceCol(c)) {
+                    return (
+                      <td key={c} className={`${cellBase} px-4`}>
+                        {s.hidePrice ? (
+                          <span className="text-muted-foreground italic">—</span>
+                        ) : val ? (
+                          <span className="text-brand font-bold">{val}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    );
+                  }
                   return (
-                    <td key={c} className="px-4 py-3">
-                      {val ? (
-                        <span className="text-brand font-bold">{val}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                    <td
+                      key={c}
+                      className={`${cellBase} px-4 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
+                      title={isFeaturesCol(c) ? val ?? "" : undefined}
+                    >
+                      {val || "—"}
                     </td>
                   );
-                }
-                return (
-                  <td
-                    key={c}
-                    className={`px-4 py-3 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
-                    title={isFeaturesCol(c) ? val ?? "" : undefined}
+                })}
+                <td className={`${cellBase} px-4`}>
+                  <StatusPill status={u.status} />
+                </td>
+                <td className={`${cellBase} px-4 text-left`}>
+                  <button
+                    onClick={() => onOpen(u)}
+                    className="px-3 py-1.5 rounded-md bg-brand/10 text-brand text-xs hover:bg-brand/20 transition"
                   >
-                    {val || "—"}
-                  </td>
-                );
-              })}
-              <td className="px-4 py-3">
-                <StatusPill status={u.status} />
-              </td>
-              <td className="px-4 py-3 text-left">
-                <button
-                  onClick={() => onOpen(u)}
-                  className="px-3 py-1.5 rounded-md bg-brand/10 text-brand text-xs hover:bg-brand/20 transition"
-                >
-                  التفاصيل ←
-                </button>
-              </td>
-            </tr>
-          ))}
+                    التفاصيل ←
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
