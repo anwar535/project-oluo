@@ -151,33 +151,32 @@ function ProjectPage() {
     ? `حي ${project.district} - الرياض`
     : "الرياض";
 
+  // Columns visible in tables/cards — video links are hidden everywhere except the unit dialog
+  const publicColumns = useMemo(
+    () => columns.filter((c) => !isVideoCol(c)),
+    [columns],
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <section className="mx-auto max-w-7xl px-6 pt-10 pb-6 text-center">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-navy">
-          {primaryTitle}
-        </h1>
-        <p className="mt-3 text-base md:text-lg font-semibold text-foreground/90">
-          {complexLabel}
-        </p>
-        <p className="mt-1 text-sm md:text-base text-muted-foreground">
-          {districtLine}
-        </p>
-        {units.length > 0 && (
-          <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
-            <Stat label="الإجمالي" value={counts.total} />
-            <span className="text-border">|</span>
-            <Stat label="متاح" value={counts.available} tone="emerald" />
-            <span className="text-border">|</span>
-            <Stat label="محجوز" value={counts.reserved} tone="amber" />
-            <span className="text-border">|</span>
-            <Stat label="مباع" value={counts.sold} tone="stone" />
-          </div>
-        )}
-      </section>
+      {/* 1. Black header with project titles */}
+      <header className="bg-black text-white">
+        <div className="mx-auto max-w-7xl px-6 py-10 text-center">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
+            {primaryTitle}
+          </h1>
+          <p className="mt-3 text-base md:text-lg font-semibold text-white/90">
+            {complexLabel}
+          </p>
+          <p className="mt-1 text-sm md:text-base text-white/70">
+            {districtLine}
+          </p>
+        </div>
+      </header>
 
+      {/* 2. Cover image */}
       {project.cover_image && (
-        <section className="mx-auto max-w-7xl px-6">
+        <section className="mx-auto max-w-7xl px-6 mt-6">
           <div className="relative aspect-[16/6] overflow-hidden rounded-2xl border border-border bg-muted">
             <img
               src={project.cover_image}
@@ -188,6 +187,22 @@ function ProjectPage() {
         </section>
       )}
 
+      {/* 3. Statistics — directly under the cover image */}
+      {units.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 mt-6 text-center">
+          <div className="inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
+            <Stat label="الإجمالي" value={counts.total} />
+            <span className="text-border">|</span>
+            <Stat label="متاح" value={counts.available} tone="emerald" />
+            <span className="text-border">|</span>
+            <Stat label="محجوز" value={counts.reserved} tone="amber" />
+            <span className="text-border">|</span>
+            <Stat label="مباع" value={counts.sold} tone="stone" />
+          </div>
+        </section>
+      )}
+
+      {/* 4. Filters + view toggles */}
       <section className="mx-auto max-w-7xl px-6 mt-8">
         {units.length > 0 && (
           <div className="flex flex-wrap items-center gap-3">
@@ -238,6 +253,7 @@ function ProjectPage() {
           </div>
         )}
       </section>
+
 
       <main className="mx-auto max-w-7xl px-6 pb-6 mt-6">
         {isLoading ? (
