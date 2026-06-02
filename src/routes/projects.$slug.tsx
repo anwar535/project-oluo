@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { List, LayoutGrid } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,21 @@ import {
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+
+// Status-driven visual treatment for a unit row/card
+function statusStyle(status: string) {
+  switch (status) {
+    case "متاح":
+      return { border: "border-emerald-500", overlay: "", hidePrice: false };
+    case "محجوز":
+      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: true };
+    case "مباع":
+      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: true };
+    case "غير متاح":
+    default:
+      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: true };
+  }
+}
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
