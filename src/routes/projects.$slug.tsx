@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { List, LayoutGrid } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,21 @@ import {
 import { SiteHeader } from "@/components/SiteHeader";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+
+// Status-driven visual treatment for a unit row/card
+function statusStyle(status: string) {
+  switch (status) {
+    case "متاح":
+      return { border: "border-emerald-500", overlay: "", hidePrice: false };
+    case "محجوز":
+      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: true };
+    case "مباع":
+      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: true };
+    case "غير متاح":
+    default:
+      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: true };
+  }
+}
 
 export const Route = createFileRoute("/projects/$slug")({
   component: ProjectPage,
@@ -165,23 +181,27 @@ function ProjectPage() {
             <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
               <button
                 onClick={() => setView("table")}
-                className={`px-4 h-11 text-sm transition ${
+                aria-label="عرض الجدول"
+                title="عرض الجدول"
+                className={`px-4 h-11 inline-flex items-center justify-center transition ${
                   view === "table"
                     ? "bg-navy text-navy-foreground"
                     : "hover:bg-muted"
                 }`}
               >
-                جدول
+                <List className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setView("grid")}
-                className={`px-4 h-11 text-sm transition ${
+                aria-label="عرض الشبكة"
+                title="عرض الشبكة"
+                className={`px-4 h-11 inline-flex items-center justify-center transition ${
                   view === "grid"
                     ? "bg-navy text-navy-foreground"
                     : "hover:bg-muted"
                 }`}
               >
-                شبكة
+                <LayoutGrid className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -223,6 +243,16 @@ function ProjectPage() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto max-w-7xl px-6 py-5 text-[12px] leading-7 text-muted-foreground text-right">
+          <p>• تسري الأسعار حتى تاريخ 2026/06/30.</p>
+          <p>
+            • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في
+            الوثائق الصادرة من الجهات الرسمية.
+          </p>
+        </div>
+      </footer>
 
       <UnitDialog
         unit={active}
@@ -283,63 +313,69 @@ function UnitsTable({
   onOpen: (u: UnitRow) => void;
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
-      <table className="w-full text-sm text-right">
-        <thead className="bg-muted/60 text-muted-foreground">
+    <div className="overflow-x-auto">
+      <table
+        className="w-full text-sm text-right border-separate"
+        style={{ borderSpacing: "0 10px" }}
+      >
+        <thead className="text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 font-medium whitespace-nowrap">رقم الوحدة</th>
+            <th className="px-4 py-2 font-medium whitespace-nowrap">رقم الوحدة</th>
             {columns.map((c) => (
-              <th key={c} className="px-4 py-3 font-medium whitespace-nowrap">
+              <th key={c} className="px-4 py-2 font-medium whitespace-nowrap">
                 {c}
               </th>
             ))}
-            <th className="px-4 py-3 font-medium">الحالة</th>
-            <th className="px-4 py-3 font-medium"></th>
+            <th className="px-4 py-2 font-medium">الحالة</th>
+            <th className="px-4 py-2 font-medium"></th>
           </tr>
         </thead>
         <tbody>
-          {units.map((u) => (
-            <tr
-              key={u.id}
-              className="border-t border-border hover:bg-muted/30 transition"
-            >
-              <td className="px-4 py-3 font-bold">{u.unit_number}</td>
-              {columns.map((c) => {
-                const val = u.extra?.[c];
-                if (isPriceCol(c)) {
+          {units.map((u) => {
+            const s = statusStyle(u.status);
+            const cellBase = `py-3 bg-card ${s.overlay} border-y border-r-0 border-l-0 first:border-r-4 last:border-l first:rounded-r-xl last:rounded-l-xl ${s.border}`;
+            return (
+              <tr key={u.id} className="transition hover:opacity-95">
+                <td className={`${cellBase} px-4 font-bold`}>{u.unit_number}</td>
+                {columns.map((c) => {
+                  const val = u.extra?.[c];
+                  if (isPriceCol(c)) {
+                    return (
+                      <td key={c} className={`${cellBase} px-4`}>
+                        {s.hidePrice ? (
+                          <span className="text-muted-foreground italic">—</span>
+                        ) : val ? (
+                          <span className="text-brand font-bold">{val}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    );
+                  }
                   return (
-                    <td key={c} className="px-4 py-3">
-                      {val ? (
-                        <span className="text-brand font-bold">{val}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                    <td
+                      key={c}
+                      className={`${cellBase} px-4 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
+                      title={isFeaturesCol(c) ? val ?? "" : undefined}
+                    >
+                      {val || "—"}
                     </td>
                   );
-                }
-                return (
-                  <td
-                    key={c}
-                    className={`px-4 py-3 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
-                    title={isFeaturesCol(c) ? val ?? "" : undefined}
+                })}
+                <td className={`${cellBase} px-4`}>
+                  <StatusPill status={u.status} />
+                </td>
+                <td className={`${cellBase} px-4 text-left`}>
+                  <button
+                    onClick={() => onOpen(u)}
+                    className="px-3 py-1.5 rounded-md bg-brand/10 text-brand text-xs hover:bg-brand/20 transition"
                   >
-                    {val || "—"}
-                  </td>
-                );
-              })}
-              <td className="px-4 py-3">
-                <StatusPill status={u.status} />
-              </td>
-              <td className="px-4 py-3 text-left">
-                <button
-                  onClick={() => onOpen(u)}
-                  className="px-3 py-1.5 rounded-md bg-brand/10 text-brand text-xs hover:bg-brand/20 transition"
-                >
-                  التفاصيل ←
-                </button>
-              </td>
-            </tr>
-          ))}
+                    التفاصيل ←
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -355,6 +391,7 @@ function UnitCard({
   columns: string[];
   onClick: () => void;
 }) {
+  const s = statusStyle(unit.status);
   // Show up to first 3 non-features columns + price if present
   const featured = columns
     .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
@@ -362,32 +399,41 @@ function UnitCard({
   return (
     <button
       onClick={onClick}
-      className="text-right bg-card rounded-xl border border-border p-5 hover:border-brand hover:shadow-md transition-all"
+      className={`relative text-right bg-card rounded-xl border-2 ${s.border} p-5 hover:shadow-md transition-all overflow-hidden`}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs text-muted-foreground">رقم الوحدة</div>
-          <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
+      {s.overlay && (
+        <div className={`absolute inset-0 pointer-events-none ${s.overlay}`} />
+      )}
+      <div className="relative">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">رقم الوحدة</div>
+            <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
+          </div>
+          <StatusPill status={unit.status} />
         </div>
-        <StatusPill status={unit.status} />
-      </div>
-      <dl className="mt-4 space-y-2 text-sm">
-        {featured.map((c) => (
-          <Pair
-            key={c}
-            label={c}
-            value={
-              isPriceCol(c) ? (
-                <span className="text-brand font-bold">{unit.extra[c]}</span>
-              ) : (
-                unit.extra[c]
-              )
-            }
-          />
-        ))}
-      </dl>
-      <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
-        عرض التفاصيل ←
+        <dl className="mt-4 space-y-2 text-sm">
+          {featured.map((c) => (
+            <Pair
+              key={c}
+              label={c}
+              value={
+                isPriceCol(c) ? (
+                  s.hidePrice ? (
+                    <span className="text-muted-foreground italic">—</span>
+                  ) : (
+                    <span className="text-brand font-bold">{unit.extra[c]}</span>
+                  )
+                ) : (
+                  unit.extra[c]
+                )
+              }
+            />
+          ))}
+        </dl>
+        <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
+          عرض التفاصيل ←
+        </div>
       </div>
     </button>
   );
@@ -483,14 +529,18 @@ function UnitDialog({
 
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
-                {dataCols.map((c) => (
-                  <DataBox
-                    key={c}
-                    label={c}
-                    value={unit.extra?.[c] ?? null}
-                    accent={isPriceCol(c) && !!unit.extra?.[c]}
-                  />
-                ))}
+                {dataCols.map((c) => {
+                  const isPrice = isPriceCol(c);
+                  const hide = isPrice && statusStyle(unit.status).hidePrice;
+                  return (
+                    <DataBox
+                      key={c}
+                      label={c}
+                      value={hide ? "—" : unit.extra?.[c] ?? null}
+                      accent={isPrice && !hide && !!unit.extra?.[c]}
+                    />
+                  );
+                })}
               </div>
             )}
 
