@@ -394,14 +394,39 @@ function AdminPage() {
   );
 }
 
-function EditableCell({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+function EditableCell({ value, onSave }: { value: string; onSave: (v: string) => void | Promise<void> }) {
+  const [val, setVal] = useState(value ?? "");
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { setVal(value ?? ""); }, [value]);
+  const dirty = val !== (value ?? "");
+  async function commit() {
+    if (!dirty) return;
+    await onSave(val);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1200);
+  }
   return (
     <td className="px-2 py-1">
-      <input
-        defaultValue={value}
-        onBlur={(e) => e.target.value !== value && onSave(e.target.value)}
-        className="bg-transparent border-b border-border w-full min-w-[80px]"
-      />
+      <div className="flex items-center gap-1">
+        <input
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } }}
+          className={`bg-transparent border-b w-full min-w-[80px] ${dirty ? "border-brand" : "border-border"}`}
+        />
+        {dirty && (
+          <button
+            type="button"
+            onClick={commit}
+            className="px-1.5 py-0.5 rounded bg-brand text-white text-[10px] font-bold shrink-0"
+            title="حفظ"
+          >
+            حفظ
+          </button>
+        )}
+        {saved && <span className="text-emerald-600 text-[10px]">✓</span>}
+      </div>
     </td>
   );
 }
