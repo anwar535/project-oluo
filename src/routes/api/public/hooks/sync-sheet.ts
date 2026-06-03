@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const SHEET_ID = "1x3IImxiEZmrB5-cx3AUlTNGUdyoe-40RWHgvvAjc4UI";
+const SHEET_ID = "1nSVfMa9OdZZUt9n9B-3CwX7KdjOqLOxy_5flkR2VfpU";
+const PROJECTS_META_TAB = "projects "; // note trailing space — actual sheet name
 
 // Special header synonyms — these get mapped to dedicated columns.
 // Everything else is preserved verbatim as a dynamic column per project.
@@ -87,6 +88,10 @@ async function fetchTab(tab: string): Promise<TabResult | null> {
     return "extra";
   });
 
+  // Safety: if no unit_number header is present, this tab is NOT a units tab
+  // (likely gviz fell back to the first sheet). Skip to avoid corrupting columns.
+  if (!roles.includes("unit_number")) return null;
+
   const dynamicColumns: string[] = [];
   headers.forEach((h, i) => {
     if (roles[i] === "extra" && !dynamicColumns.includes(h)) dynamicColumns.push(h);
@@ -135,7 +140,7 @@ const PROJECT_FIELD_MAP: Record<string, string> = {
 async function syncProjectsMeta(): Promise<{ updated: number; errors: string[] }> {
   const errors: string[] = [];
   let updated = 0;
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("_projects")}`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(PROJECTS_META_TAB)}`;
   const res = await fetch(url);
   if (!res.ok) return { updated, errors };
   const rows = parseCSV(await res.text());
