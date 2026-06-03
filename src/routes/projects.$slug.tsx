@@ -147,9 +147,14 @@ function ProjectPage() {
     : `مشروع ${project.name}`;
   const complexLabel =
     project.category === "Villas" ? "مجمع فلل فاخرة" : "مجمع شقق سكنية فاخرة";
-  const districtLine = project.district
-    ? `حي ${project.district} - الرياض`
-    : "الرياض";
+  const districtLine = (() => {
+    const d = (project.district ?? "").trim();
+    if (!d) return "الرياض";
+    let s = d;
+    if (!/^حي\s/.test(s)) s = `حي ${s}`;
+    if (!/الرياض\s*$/.test(s)) s = `${s} - الرياض`;
+    return s;
+  })();
 
   // Columns visible in tables/cards — video links are hidden everywhere except the unit dialog
   const publicColumns = useMemo(
