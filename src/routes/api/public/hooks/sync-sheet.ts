@@ -120,15 +120,66 @@ export const Route = createFileRoute("/api/public/hooks/sync-sheet")({
   },
 });
 
+const PROJECT_FIELD_MAP: Record<string, string> = {
+  "id": "id", "slug": "slug", "name": "name", "اسم المشروع": "name", "الاسم": "name",
+  "district": "district", "الحي": "district",
+  "cover_image": "cover_image", "صورة الغلاف": "cover_image", "الغلاف": "cover_image",
+  "status": "status", "الحالة": "status",
+  "category": "category", "التصنيف": "category",
+  "tagline": "tagline", "الوصف": "tagline",
+  "type": "type", "النوع": "type",
+  "sheet_tab": "sheet_tab", "تبويب الجدول": "sheet_tab",
+  "sort_order": "sort_order", "الترتيب": "sort_order",
+};
+
+async function syncProjectsMeta(): Promise<{ updated: number; errors: string[] }> {
+  const errors: string[] = [];
+  let updated = 0;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent("_projects")}`;
+  const res = await fetch(url);
+  if (!res.ok) return { updated, errors };
+  const rows = parseCSV(await res.text());
+  if (rows.length < 2) return { updated, errors };
+  const headers = rows[0].map((h) => h.trim());
+  const fieldIdx: Array<string | null> = headers.map((h) => PROJECT_FIELD_MAP[h.toLowerCase()] || PROJECT_FIELD_MAP[h] || null);
+  for (const r of rows.slice(1)) {
+    const patch: Record<string, any> = {};
+    let key: { id?: string; slug?: string } = {};
+    fieldIdx.forEach((field, i) => {
+      if (!field) return;
+      const val = (r[i] ?? "").trim();
+      if (!val) return;
+      if (field === "id") key.id = val;
+      else if (field === "slug") { key.slug = val; patch.slug = val; }
+      else if (field === "cover_image") patch.cover_image = normalizeDriveUrl(val);
+      else if (field === "sort_order") patch.sort_order = parseInt(val) || 0;
+      else patch[field] = val;
+    });
+    if (!key.id && !key.slug) continue;
+    if (Object.keys(patch).length === 0) continue;
+    const q = supabaseAdmin.from("projects").update(patch as any);
+    const { error: e } = key.id ? await q.eq("id", key.id) : await q.eq("slug", key.slug!);
+    if (e) errors.push(`project ${key.id || key.slug}: ${e.message}`);
+    else updated++;
+  }
+  return { updated, errors };
+}
+
 async function handler() {
   let inserted = 0;
   let updated = 0;
   const errors: string[] = [];
 
+  // Sync project-level metadata from optional _projects tab
+  const meta = await syncProjectsMeta();
+  updated += meta.updated;
+  errors.push(...meta.errors);
+
   const { data: projects, error } = await supabaseAdmin
     .from("projects")
     .select("id, sheet_tab");
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
 
   for (const p of projects ?? []) {
     const tab = p.sheet_tab || p.id;
