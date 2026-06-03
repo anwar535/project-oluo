@@ -157,7 +157,7 @@ async function syncProjectsMeta(): Promise<{ updated: number; errors: string[] }
     });
     if (!key.id && !key.slug) continue;
     if (Object.keys(patch).length === 0) continue;
-    const q = supabaseAdmin.from("projects").update(patch);
+    const q = supabaseAdmin.from("projects").update(patch as any);
     const { error: e } = key.id ? await q.eq("id", key.id) : await q.eq("slug", key.slug!);
     if (e) errors.push(`project ${key.id || key.slug}: ${e.message}`);
     else updated++;
