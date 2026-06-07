@@ -366,24 +366,28 @@ function UnitsTable({
 }) {
   return (
     <div
-      className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0 touch-pinch-zoom"
+      className="overflow-x-auto -mx-6 px-2 sm:mx-0 sm:px-0"
       style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y pinch-zoom" }}
     >
       <table
-        className="text-sm text-right border-separate w-full min-w-[720px]"
-        style={{ borderSpacing: "0 10px" }}
+        className="text-[11px] sm:text-sm text-right border-separate w-full table-fixed sm:table-auto"
+        style={{ borderSpacing: "0 8px" }}
       >
+
 
         <thead className="text-muted-foreground">
           <tr>
-            <th className="px-4 py-2 font-medium whitespace-nowrap">رقم الوحدة</th>
+            <th className="px-1.5 sm:px-4 py-2 font-medium whitespace-nowrap">رقم الوحدة</th>
             {columns.map((c) => (
-              <th key={c} className="px-4 py-2 font-medium whitespace-nowrap">
+              <th
+                key={c}
+                className={`px-1.5 sm:px-4 py-2 font-medium ${isFeaturesCol(c) ? "hidden md:table-cell" : ""}`}
+              >
                 {c}
               </th>
             ))}
-            <th className="px-4 py-2 font-medium">الحالة</th>
-            <th className="px-4 py-2 font-medium"></th>
+            <th className="px-1.5 sm:px-4 py-2 font-medium">الحالة</th>
+            <th className="px-1.5 sm:px-4 py-2 font-medium hidden sm:table-cell"></th>
           </tr>
         </thead>
         <tbody>
@@ -391,13 +395,13 @@ function UnitsTable({
             const s = statusStyle(u.status);
             const cellBase = `py-3 bg-card ${s.overlay} border-y border-r-0 border-l-0 first:border-r-4 last:border-l first:rounded-r-xl last:rounded-l-xl ${s.border}`;
             return (
-              <tr key={u.id} className="transition hover:opacity-95">
-                <td className={`${cellBase} px-4 font-bold`}>{u.unit_number}</td>
+              <tr key={u.id} className="transition hover:opacity-95 cursor-pointer" onClick={() => onOpen(u)}>
+                <td className={`${cellBase} px-1.5 sm:px-4 font-bold whitespace-nowrap`}>{u.unit_number}</td>
                 {columns.map((c) => {
                   const val = u.extra?.[c];
                   if (isPriceCol(c)) {
                     return (
-                      <td key={c} className={`${cellBase} px-4`}>
+                      <td key={c} className={`${cellBase} px-1.5 sm:px-4 whitespace-nowrap`}>
                         {s.hidePrice ? (
                           <span className="text-muted-foreground italic">—</span>
                         ) : val ? (
@@ -411,19 +415,19 @@ function UnitsTable({
                   return (
                     <td
                       key={c}
-                      className={`${cellBase} px-4 ${isFeaturesCol(c) ? "text-muted-foreground max-w-[260px] truncate" : ""}`}
+                      className={`${cellBase} px-1.5 sm:px-4 break-words ${isFeaturesCol(c) ? "hidden md:table-cell text-muted-foreground max-w-[260px] truncate" : ""}`}
                       title={isFeaturesCol(c) ? val ?? "" : undefined}
                     >
                       {val || "—"}
                     </td>
                   );
                 })}
-                <td className={`${cellBase} px-4`}>
+                <td className={`${cellBase} px-1.5 sm:px-4`}>
                   <StatusPill status={u.status} />
                 </td>
-                <td className={`${cellBase} px-4 text-left`}>
+                <td className={`${cellBase} px-1.5 sm:px-4 text-left hidden sm:table-cell`}>
                   <button
-                    onClick={() => onOpen(u)}
+                    onClick={(e) => { e.stopPropagation(); onOpen(u); }}
                     className="px-3 py-1.5 rounded-md bg-brand/10 text-brand text-xs hover:bg-brand/20 transition"
                   >
                     التفاصيل ←
@@ -432,6 +436,7 @@ function UnitsTable({
               </tr>
             );
           })}
+
         </tbody>
       </table>
     </div>
