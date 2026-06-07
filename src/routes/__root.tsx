@@ -71,7 +71,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" },
       { title: "Oluo Project" },
       { name: "description", content: "Project Showcase Creator displays project details, floor plans, and pricing, syncing automatically with Google Sheets." },
       { name: "author", content: "Lovable" },
