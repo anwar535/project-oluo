@@ -365,11 +365,15 @@ function UnitsTable({
   onOpen: (u: UnitRow) => void;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div
+      className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0 touch-pinch-zoom"
+      style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y pinch-zoom" }}
+    >
       <table
-        className="w-full text-sm text-right border-separate"
+        className="text-sm text-right border-separate w-full min-w-[720px]"
         style={{ borderSpacing: "0 10px" }}
       >
+
         <thead className="text-muted-foreground">
           <tr>
             <th className="px-4 py-2 font-medium whitespace-nowrap">رقم الوحدة</th>
