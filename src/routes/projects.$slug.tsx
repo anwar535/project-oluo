@@ -366,13 +366,14 @@ function UnitsTable({
 }) {
   return (
     <div
-      className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0 touch-pinch-zoom"
+      className="overflow-x-auto -mx-6 px-2 sm:mx-0 sm:px-0"
       style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y pinch-zoom" }}
     >
       <table
-        className="text-sm text-right border-separate w-full min-w-[720px]"
-        style={{ borderSpacing: "0 10px" }}
+        className="text-[11px] sm:text-sm text-right border-separate w-full table-fixed sm:table-auto"
+        style={{ borderSpacing: "0 8px" }}
       >
+
 
         <thead className="text-muted-foreground">
           <tr>
