@@ -11,6 +11,24 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+import logo from "@/assets/logo.png";
+
+// Active style for the status filter buttons — mirrors the in-table StatusPill colors
+function statusBtnActive(status: string) {
+  switch (status) {
+    case "متاح":
+      return "bg-emerald-100 text-emerald-700 border-emerald-500";
+    case "محجوز":
+      return "bg-amber-100 text-amber-700 border-amber-500";
+    case "مباع":
+      return "bg-stone-200 text-stone-700 border-red-500";
+    case "غير متاح":
+      return "bg-stone-100 text-stone-600 border-gray-400";
+    case "كل الحالات":
+    default:
+      return "bg-navy text-navy-foreground border-navy";
+  }
+}
 
 
 // Status-driven visual treatment for a unit row/card
