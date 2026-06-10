@@ -198,14 +198,15 @@ function ProjectPage() {
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
         {/* Oluo logo top-left, white */}
-        <a href="/" className="absolute top-4 left-4 md:top-6 md:left-6 z-10 inline-flex items-center animate-fade-in-up" style={{ animationDelay: "0s" }}>
+        <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 inline-flex items-center animate-fade-in-up pointer-events-none select-none" style={{ animationDelay: "0s" }}>
           <img
             src={logo}
             alt="علو"
             className="h-10 md:h-12 w-auto"
             style={{ filter: "brightness(0) invert(1)" }}
+            draggable={false}
           />
-        </a>
+        </div>
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
           <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
             {primaryTitle}
