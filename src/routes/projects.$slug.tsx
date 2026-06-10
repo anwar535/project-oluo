@@ -1,16 +1,17 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { List, LayoutGrid, Phone, MessageCircle, Video } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+
 
 // Status-driven visual treatment for a unit row/card
 function statusStyle(status: string) {
@@ -60,6 +61,8 @@ export const Route = createFileRoute("/projects/$slug")({
 
 const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع", "غير متاح"] as const;
 const CONTACT_PHONES = ["0570020095", "0570020093", "0554745500"];
+const UNIFIED_PHONE = "9200022287";
+
 
 // Normalize a local Saudi number (05XXXXXXXX) to international form 9665XXXXXXXX (no plus, no leading 0)
 function toIntl(phone: string) {
@@ -86,6 +89,10 @@ function isFeaturesCol(label: string) {
 function isVideoCol(label: string) {
   return /فيديو|video|3d/i.test(label);
 }
+function isAreaCol(label: string) {
+  return /مساحة|area/i.test(label) && !/مبنية|built|جزء/i.test(label);
+}
+
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
@@ -97,10 +104,6 @@ function ProjectPage() {
   const [active, setActive] = useState<UnitRow | null>(null);
   const isMobile = useIsMobile();
 
-  // Auto-switch to grid/cards on mobile for better touch UX
-  useEffect(() => {
-    if (isMobile) setView("grid");
-  }, [isMobile]);
 
   const { data: units = [], isLoading } = useQuery({
     queryKey: ["units", project.id],
@@ -259,7 +262,7 @@ function ProjectPage() {
       </section>
 
 
-      <main className="mx-auto max-w-7xl px-6 pb-6 mt-6">
+      <main className="mx-auto max-w-7xl px-2 sm:px-6 pb-24 mt-6 animate-fade-in-up">
         {isLoading ? (
           <p className="text-center text-muted-foreground py-10">جاري التحميل...</p>
         ) : units.length === 0 ? (
@@ -271,11 +274,17 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          isMobile ? (
+            <MobileUnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          ) : (
+            <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          )
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} columns={publicColumns} onClick={() => setActive(u)} />
+            {visible.map((u, i) => (
+              <div key={u.id} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
+                <UnitCard unit={u} columns={publicColumns} onClick={() => setActive(u)} />
+              </div>
             ))}
           </div>
         )}
@@ -283,7 +292,7 @@ function ProjectPage() {
       </main>
 
       {/* Mandatory disclaimer notes — directly under the tables */}
-      <section className="mx-auto max-w-7xl px-6">
+      <section className="mx-auto max-w-7xl px-6 animate-fade-in-up">
         <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 text-xs sm:text-sm leading-7 text-muted-foreground text-center">
           • تسري الأسعار حتى تاريخ 2026/06/30. <br className="sm:hidden" />
           • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
@@ -291,20 +300,30 @@ function ProjectPage() {
       </section>
 
       {/* Contact section — at the very bottom */}
-      <section className="bg-muted/40 border-t border-border mt-10">
-        <div className="mx-auto max-w-5xl px-6 py-12">
+      <section id="contact" className="bg-muted/40 border-t border-border mt-10 animate-fade-in-up">
+        <div className="mx-auto max-w-5xl px-6 py-12 pb-28">
           <h2 className="text-center text-2xl font-bold text-navy">
             للحجز والاستفسار
           </h2>
           <div className="mx-auto mt-2 h-0.5 w-16 bg-brand rounded-full" />
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {CONTACT_PHONES.map((phone) => (
-              <ContactCard key={phone} phone={phone} />
+            {CONTACT_PHONES.map((phone, i) => (
+              <div key={phone} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
+                <ContactCard phone={phone} />
+              </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Sticky CTA */}
+      <a
+        href="#contact"
+        className="fixed bottom-4 inset-x-0 mx-auto z-40 w-[min(92%,400px)] min-h-[44px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-white font-bold shadow-xl shadow-amber-900/30 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:opacity-95 transition"
+      >
+        <Phone className="w-4 h-4" />
+        تواصل معنا الآن
+      </a>
 
       <UnitDialog
         unit={active}
@@ -315,6 +334,7 @@ function ProjectPage() {
     </div>
   );
 }
+
 
 function Stat({
   label,
@@ -546,8 +566,6 @@ function UnitDialog({
   onClose: () => void;
   project: ProjectRow;
 }) {
-  const primaryPhone = CONTACT_PHONES[0];
-
   const dataCols = unit
     ? columns.filter((c) => !isFeaturesCol(c) && !isVideoCol(c))
     : [];
@@ -560,15 +578,20 @@ function UnitDialog({
   const videoUrl = videoCol && unit ? unit.extra?.[videoCol] : undefined;
 
   return (
-    <Dialog open={!!unit} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
+    <Sheet open={!!unit} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        dir="rtl"
+        className="max-h-[92vh] overflow-y-auto rounded-t-2xl p-0"
+      >
         {unit && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl text-right">
+          <div className="px-5 pb-6 pt-5">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border" />
+            <SheetHeader>
+              <SheetTitle className="text-xl text-right">
                 وحدة رقم {unit.unit_number}
-              </DialogTitle>
-            </DialogHeader>
+              </SheetTitle>
+            </SheetHeader>
 
             <div className="mt-2">
               <StatusPill status={unit.status} />
@@ -594,13 +617,12 @@ function UnitDialog({
                 href={videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
+                className="mt-4 inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
               >
                 <Video className="w-5 h-5" />
                 مشاهدة فيديو 3D للوحدة
               </a>
             )}
-
 
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -628,30 +650,38 @@ function UnitDialog({
               </div>
             ))}
 
-            <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
-              <a
-                href={waHref(primaryPhone, unit ? `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}` : undefined)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
-              >
-                <MessageCircle className="w-5 h-5" />
-                تواصل واتساب
-              </a>
-              <a
-                href={telHref(primaryPhone)}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-navy text-navy-foreground font-medium hover:bg-navy/90 transition"
-              >
-                <Phone className="w-5 h-5" />
-                اتصل بنا
-              </a>
+            {/* Unified contact box */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="rounded-xl border border-border bg-muted/40 p-4 text-center">
+                <div className="text-xs text-muted-foreground mb-1">للحجز والاستفسار</div>
+                <div className="text-xl font-bold tracking-wider" dir="ltr">{UNIFIED_PHONE}</div>
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <a
+                    href={telHref(UNIFIED_PHONE)}
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-brand/40 text-brand font-medium hover:bg-brand/10 transition"
+                  >
+                    <Phone className="w-5 h-5" />
+                    اتصال
+                  </a>
+                  <a
+                    href={waHref(UNIFIED_PHONE, `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-100 text-emerald-700 font-medium hover:bg-emerald-200 transition"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    واتساب
+                  </a>
+                </div>
+              </div>
             </div>
-          </>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
+
 
 function DataBox({
   label,
@@ -673,3 +703,71 @@ function DataBox({
     </div>
   );
 }
+
+function MobileUnitsTable({
+  units,
+  columns,
+  onOpen,
+}: {
+  units: UnitRow[];
+  columns: string[];
+  onOpen: (u: UnitRow) => void;
+}) {
+  const areaCol = columns.find(isAreaCol);
+  const priceCol = columns.find(isPriceCol);
+
+  return (
+    <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
+      <table
+        className="w-full text-right text-[13px]"
+        style={{ tableLayout: "fixed" }}
+      >
+        <colgroup>
+          <col style={{ width: "34%" }} />
+          <col style={{ width: "22%" }} />
+          <col style={{ width: "32%" }} />
+          <col style={{ width: "12%" }} />
+        </colgroup>
+        <thead className="bg-muted/50 text-muted-foreground text-[12px]">
+          <tr>
+            <th className="px-2 py-2 font-medium">الوحدة</th>
+            <th className="px-2 py-2 font-medium">المساحة</th>
+            <th className="px-2 py-2 font-medium">السعر</th>
+            <th className="px-2 py-2 font-medium">الحالة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {units.map((u, i) => {
+            const s = statusStyle(u.status);
+            const area = areaCol ? u.extra?.[areaCol] : "";
+            const price = priceCol ? u.extra?.[priceCol] : "";
+            return (
+              <tr
+                key={u.id}
+                onClick={() => onOpen(u)}
+                className={`border-t border-border cursor-pointer active:bg-muted/60 animate-slide-in-right ${s.overlay}`}
+                style={{ animationDelay: `${i * 0.05}s`, minHeight: 44 }}
+              >
+                <td className={`px-2 py-3 font-bold truncate border-r-4 ${s.border}`}>{u.unit_number}</td>
+                <td className="px-2 py-3 truncate">{area || "—"}</td>
+                <td className="px-2 py-3 truncate">
+                  {s.hidePrice ? (
+                    <span className="text-muted-foreground italic">—</span>
+                  ) : price ? (
+                    <span className="text-brand font-bold">{price}</span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-1 py-3">
+                  <StatusPill status={u.status} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
