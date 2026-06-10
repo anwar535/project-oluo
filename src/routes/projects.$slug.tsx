@@ -169,28 +169,29 @@ function ProjectPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* 1. Hero: cover image filling width, blended into a black gradient with titles overlaid */}
-      <header className="relative w-full bg-black text-white overflow-hidden">
+      <header className="relative w-full bg-black text-white overflow-hidden group">
         {project.cover_image && (
           <img
             src={project.cover_image}
             alt={project.name}
-            className="absolute inset-0 h-full w-full object-cover opacity-90"
+            className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-[600ms] ease-out group-hover:scale-105"
           />
         )}
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
             {primaryTitle}
           </h1>
-          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             {complexLabel}
           </p>
-          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
             {districtLine}
           </p>
         </div>
       </header>
+
 
 
 
