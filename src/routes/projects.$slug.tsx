@@ -262,7 +262,7 @@ function ProjectPage() {
       </section>
 
 
-      <main className="mx-auto max-w-7xl px-6 pb-6 mt-6">
+      <main className="mx-auto max-w-7xl px-2 sm:px-6 pb-24 mt-6 animate-fade-in-up">
         {isLoading ? (
           <p className="text-center text-muted-foreground py-10">جاري التحميل...</p>
         ) : units.length === 0 ? (
@@ -274,11 +274,17 @@ function ProjectPage() {
             لا توجد وحدات مطابقة للبحث.
           </div>
         ) : view === "table" ? (
-          <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          isMobile ? (
+            <MobileUnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          ) : (
+            <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
+          )
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {visible.map((u) => (
-              <UnitCard key={u.id} unit={u} columns={publicColumns} onClick={() => setActive(u)} />
+            {visible.map((u, i) => (
+              <div key={u.id} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
+                <UnitCard unit={u} columns={publicColumns} onClick={() => setActive(u)} />
+              </div>
             ))}
           </div>
         )}
@@ -286,7 +292,7 @@ function ProjectPage() {
       </main>
 
       {/* Mandatory disclaimer notes — directly under the tables */}
-      <section className="mx-auto max-w-7xl px-6">
+      <section className="mx-auto max-w-7xl px-6 animate-fade-in-up">
         <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 text-xs sm:text-sm leading-7 text-muted-foreground text-center">
           • تسري الأسعار حتى تاريخ 2026/06/30. <br className="sm:hidden" />
           • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
@@ -294,20 +300,30 @@ function ProjectPage() {
       </section>
 
       {/* Contact section — at the very bottom */}
-      <section className="bg-muted/40 border-t border-border mt-10">
-        <div className="mx-auto max-w-5xl px-6 py-12">
+      <section id="contact" className="bg-muted/40 border-t border-border mt-10 animate-fade-in-up">
+        <div className="mx-auto max-w-5xl px-6 py-12 pb-28">
           <h2 className="text-center text-2xl font-bold text-navy">
             للحجز والاستفسار
           </h2>
           <div className="mx-auto mt-2 h-0.5 w-16 bg-brand rounded-full" />
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {CONTACT_PHONES.map((phone) => (
-              <ContactCard key={phone} phone={phone} />
+            {CONTACT_PHONES.map((phone, i) => (
+              <div key={phone} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
+                <ContactCard phone={phone} />
+              </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Sticky CTA */}
+      <a
+        href="#contact"
+        className="fixed bottom-4 inset-x-0 mx-auto z-40 w-[min(92%,400px)] min-h-[44px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-white font-bold shadow-xl shadow-amber-900/30 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:opacity-95 transition"
+      >
+        <Phone className="w-4 h-4" />
+        تواصل معنا الآن
+      </a>
 
       <UnitDialog
         unit={active}
@@ -318,6 +334,7 @@ function ProjectPage() {
     </div>
   );
 }
+
 
 function Stat({
   label,
