@@ -7,7 +7,7 @@ export function SiteHeader() {
   return (
     <header className="bg-navy text-navy-foreground sticky top-0 z-30 border-b border-white/5">
       <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between gap-6">
-        <Link to="/" className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
           <img src={logo} alt="علو العقارية" className="h-12 w-auto" />
           <div className="leading-tight text-right hidden sm:block">
             <div className="text-lg font-bold text-brand">علو العقارية</div>
@@ -15,7 +15,7 @@ export function SiteHeader() {
               OLUO REAL ESTATE
             </div>
           </div>
-        </Link>
+        </div>
 
         <nav className="flex items-center gap-2 text-sm">
           <Link
