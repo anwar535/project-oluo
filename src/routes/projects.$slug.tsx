@@ -197,14 +197,23 @@ function ProjectPage() {
         )}
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
+        {/* Oluo logo top-left, white */}
+        <a href="/" className="absolute top-4 left-4 md:top-6 md:left-6 z-10 inline-flex items-center animate-fade-in-up" style={{ animationDelay: "0s" }}>
+          <img
+            src={logo}
+            alt="علو"
+            className="h-10 md:h-12 w-auto"
+            style={{ filter: "brightness(0) invert(1)" }}
+          />
+        </a>
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
           <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
             {primaryTitle}
           </h1>
-          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <p className="mt-3 text-base md:text-lg font-semibold text-brand drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             {complexLabel}
           </p>
-          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
+          <p className="mt-1 text-sm md:text-base text-brand/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
             {districtLine}
           </p>
         </div>
@@ -213,18 +222,18 @@ function ProjectPage() {
 
 
 
-      {/* Filters: search + status as a horizontal button group (auto-filtering) */}
+      {/* Filters: units count + status as a horizontal button group (auto-filtering) */}
       <section className="mx-auto max-w-7xl px-6 mt-8">
         {units.length > 0 && (
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="search"
-                value={search_}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث برقم الوحدة أو أي بيان..."
-                className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
-              />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 h-11 px-4 rounded-lg border border-brand/30 bg-brand/10 text-sm">
+                <span className="text-muted-foreground">عدد الوحدات</span>
+                <span className="text-brand font-bold text-base">{visible.length}</span>
+                {visible.length !== counts.total && (
+                  <span className="text-[11px] text-muted-foreground">/ {counts.total}</span>
+                )}
+              </div>
               <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
                 <button
                   onClick={() => setView("table")}
@@ -248,7 +257,7 @@ function ProjectPage() {
                 </button>
               </div>
             </div>
-            {/* Status as full button group (no dropdown) */}
+            {/* Status as full button group (no dropdown) — colors mirror the in-table status pills */}
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTS.map((f) => {
                 const active = statusFilter === f;
@@ -258,7 +267,7 @@ function ProjectPage() {
                     onClick={() => setStatusFilter(f)}
                     className={`px-4 h-10 rounded-full text-sm font-medium border transition ${
                       active
-                        ? "bg-navy text-navy-foreground border-navy shadow-sm"
+                        ? `${statusBtnActive(f)} shadow-sm`
                         : "bg-card text-foreground border-border hover:bg-muted"
                     }`}
                   >
@@ -290,7 +299,7 @@ function ProjectPage() {
             <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
           )
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+          <div className="flex flex-col gap-4 w-full">
             {visible.map((u, i) => (
               <div key={u.id} className="animate-slide-in-right w-full" style={{ animationDelay: `${i * 0.05}s` }}>
                 <UnitCard unit={u} columns={publicColumns} onClick={() => setActive(u)} />
@@ -309,34 +318,26 @@ function ProjectPage() {
         </div>
       </section>
 
-      {/* Contact — unified single number, phone right, actions left */}
+      {/* Contact — unified number + reservation numbers, each on its own balanced row */}
       <section id="contact" className="bg-muted/40 border-t border-border mt-10 animate-fade-in-up">
         <div className="mx-auto max-w-3xl px-6 py-10">
-          <h2 className="text-center text-xl font-bold text-navy">الرقم الموحد</h2>
+          <h2 className="text-center text-xl font-bold text-navy">تواصل معنا</h2>
           <div className="mx-auto mt-2 mb-6 h-0.5 w-16 bg-brand rounded-full" />
-          <div className="rounded-2xl border border-border bg-card p-5 flex flex-row-reverse items-center justify-between gap-4 flex-wrap">
-            <div className="text-right">
-              <div className="text-[11px] text-muted-foreground mb-0.5">للحجز والاستفسار</div>
-              <div className="text-2xl font-bold tracking-wider" dir="ltr">{UNIFIED_PHONE}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={telHref(UNIFIED_PHONE)}
-                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg border border-brand/40 text-brand text-sm font-medium hover:bg-brand/10 transition"
-              >
-                <Phone className="w-4 h-4" />
-                اتصال
-              </a>
-              <a
-                href={waHref(UNIFIED_PHONE, `السلام عليكم، أرغب بالاستفسار عن ${project.name}`)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-                واتساب
-              </a>
-            </div>
+          <div className="space-y-3">
+            <ContactRow
+              label="الرقم الموحد"
+              phone={UNIFIED_PHONE}
+              waText={`السلام عليكم، أرغب بالاستفسار عن ${project.name}`}
+              highlight
+            />
+            {CONTACT_PHONES.map((p, idx) => (
+              <ContactRow
+                key={p}
+                label={idx === 0 ? "للحجز والاستفسار" : "\u00A0"}
+                phone={p}
+                waText={`السلام عليكم، أرغب بالاستفسار عن ${project.name}`}
+              />
+            ))}
           </div>
         </div>
       </section>
