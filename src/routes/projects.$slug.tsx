@@ -169,24 +169,24 @@ function ProjectPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* 1. Hero: cover image filling width, blended into a black gradient with titles overlaid */}
-      <header className="relative w-full bg-black text-white overflow-hidden">
+      <header className="relative w-full bg-black text-white overflow-hidden group">
         {project.cover_image && (
           <img
             src={project.cover_image}
             alt={project.name}
-            className="absolute inset-0 h-full w-full object-cover opacity-90"
+            className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-[600ms] ease-out group-hover:scale-105"
           />
         )}
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
             {primaryTitle}
           </h1>
-          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             {complexLabel}
           </p>
-          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)]">
+          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
             {districtLine}
           </p>
         </div>
@@ -194,68 +194,60 @@ function ProjectPage() {
 
 
 
-      {/* 3. Statistics — directly under the cover image */}
-      {units.length > 0 && (
-        <section className="mx-auto max-w-7xl px-6 mt-6 text-center">
-          <div className="inline-flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm bg-card border border-border rounded-full px-5 py-2">
-            <Stat label="الإجمالي" value={counts.total} />
-            <span className="text-border">|</span>
-            <Stat label="متاح" value={counts.available} tone="emerald" />
-            <span className="text-border">|</span>
-            <Stat label="محجوز" value={counts.reserved} tone="amber" />
-            <span className="text-border">|</span>
-            <Stat label="مباع" value={counts.sold} tone="stone" />
-          </div>
-        </section>
-      )}
 
-      {/* 4. Filters + view toggles */}
+      {/* Filters: search + status as a horizontal button group (auto-filtering) */}
       <section className="mx-auto max-w-7xl px-6 mt-8">
         {units.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3">
-            <input
-              type="search"
-              value={search_}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="ابحث برقم الوحدة أو أي بيان..."
-              className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as (typeof STATUS_OPTS)[number])
-              }
-              className="h-11 rounded-lg border border-border bg-card px-3 text-sm"
-            >
-              {STATUS_OPTS.map((f) => (
-                <option key={f}>{f}</option>
-              ))}
-            </select>
-            <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
-              <button
-                onClick={() => setView("table")}
-                aria-label="عرض الجدول"
-                title="عرض الجدول"
-                className={`px-4 h-11 inline-flex items-center justify-center transition ${
-                  view === "table"
-                    ? "bg-navy text-navy-foreground"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setView("grid")}
-                aria-label="عرض الشبكة"
-                title="عرض الشبكة"
-                className={`px-4 h-11 inline-flex items-center justify-center transition ${
-                  view === "grid"
-                    ? "bg-navy text-navy-foreground"
-                    : "hover:bg-muted"
-                }`}
-              >
-                <LayoutGrid className="w-5 h-5" />
-              </button>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="search"
+                value={search_}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث برقم الوحدة أو أي بيان..."
+                className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
+              />
+              <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
+                <button
+                  onClick={() => setView("table")}
+                  aria-label="عرض الجدول"
+                  title="عرض الجدول"
+                  className={`px-4 h-11 inline-flex items-center justify-center transition ${
+                    view === "table" ? "bg-navy text-navy-foreground" : "hover:bg-muted"
+                  }`}
+                >
+                  <List className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setView("grid")}
+                  aria-label="عرض الشبكة"
+                  title="عرض الشبكة"
+                  className={`px-4 h-11 inline-flex items-center justify-center transition ${
+                    view === "grid" ? "bg-navy text-navy-foreground" : "hover:bg-muted"
+                  }`}
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            {/* Status as full button group (no dropdown) */}
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTS.map((f) => {
+                const active = statusFilter === f;
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setStatusFilter(f)}
+                    className={`px-4 h-10 rounded-full text-sm font-medium border transition ${
+                      active
+                        ? "bg-navy text-navy-foreground border-navy shadow-sm"
+                        : "bg-card text-foreground border-border hover:bg-muted"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -280,9 +272,9 @@ function ProjectPage() {
             <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
           )
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
             {visible.map((u, i) => (
-              <div key={u.id} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
+              <div key={u.id} className="animate-slide-in-right w-full" style={{ animationDelay: `${i * 0.05}s` }}>
                 <UnitCard unit={u} columns={publicColumns} onClick={() => setActive(u)} />
               </div>
             ))}
@@ -291,39 +283,47 @@ function ProjectPage() {
 
       </main>
 
-      {/* Mandatory disclaimer notes — directly under the tables */}
+      {/* Mandatory disclaimer notes — soft gold, right-aligned */}
       <section className="mx-auto max-w-7xl px-6 animate-fade-in-up">
-        <div className="rounded-xl border border-border bg-muted/40 px-5 py-4 text-xs sm:text-sm leading-7 text-muted-foreground text-center">
-          • تسري الأسعار حتى تاريخ 2026/06/30. <br className="sm:hidden" />
+        <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-5 py-4 text-xs sm:text-sm leading-7 text-amber-900 text-right">
+          • تسري الأسعار حتى تاريخ 2026/06/30.<br />
           • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
         </div>
       </section>
 
-      {/* Contact section — at the very bottom */}
+      {/* Contact — unified single number, phone right, actions left */}
       <section id="contact" className="bg-muted/40 border-t border-border mt-10 animate-fade-in-up">
-        <div className="mx-auto max-w-5xl px-6 py-12 pb-28">
-          <h2 className="text-center text-2xl font-bold text-navy">
-            للحجز والاستفسار
-          </h2>
-          <div className="mx-auto mt-2 h-0.5 w-16 bg-brand rounded-full" />
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {CONTACT_PHONES.map((phone, i) => (
-              <div key={phone} className="animate-slide-in-right" style={{ animationDelay: `${i * 0.05}s` }}>
-                <ContactCard phone={phone} />
-              </div>
-            ))}
+        <div className="mx-auto max-w-3xl px-6 py-10">
+          <h2 className="text-center text-xl font-bold text-navy">الرقم الموحد</h2>
+          <div className="mx-auto mt-2 mb-6 h-0.5 w-16 bg-brand rounded-full" />
+          <div className="rounded-2xl border border-border bg-card p-5 flex flex-row-reverse items-center justify-between gap-4 flex-wrap">
+            <div className="text-right">
+              <div className="text-[11px] text-muted-foreground mb-0.5">للحجز والاستفسار</div>
+              <div className="text-2xl font-bold tracking-wider" dir="ltr">{UNIFIED_PHONE}</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={telHref(UNIFIED_PHONE)}
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg border border-brand/40 text-brand text-sm font-medium hover:bg-brand/10 transition"
+              >
+                <Phone className="w-4 h-4" />
+                اتصال
+              </a>
+              <a
+                href={waHref(UNIFIED_PHONE, `السلام عليكم، أرغب بالاستفسار عن ${project.name}`)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition"
+              >
+                <MessageCircle className="w-4 h-4" />
+                واتساب
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Sticky CTA */}
-      <a
-        href="#contact"
-        className="fixed bottom-4 inset-x-0 mx-auto z-40 w-[min(92%,400px)] min-h-[44px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full text-white font-bold shadow-xl shadow-amber-900/30 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:opacity-95 transition"
-      >
-        <Phone className="w-4 h-4" />
-        تواصل معنا الآن
-      </a>
+
 
       <UnitDialog
         unit={active}
