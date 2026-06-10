@@ -492,33 +492,30 @@ function UnitCard({
   onClick: () => void;
 }) {
   const s = statusStyle(unit.status);
-  // Show up to first 3 non-features columns + price if present
   const featured = columns
     .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
-    .slice(0, 4);
+    .slice(0, 5);
   return (
     <button
       onClick={onClick}
-      className={`relative text-right bg-card rounded-xl border-2 ${s.border} p-5 hover:shadow-md transition-all overflow-hidden`}
+      className={`relative w-full text-right bg-card rounded-xl border-2 ${s.border} px-4 sm:px-5 py-4 hover:shadow-md transition-all overflow-hidden`}
     >
       {s.overlay && (
         <div className={`absolute inset-0 pointer-events-none ${s.overlay}`} />
       )}
-      <div className="relative">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">رقم الوحدة</div>
-            <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
-          </div>
-          <StatusPill status={unit.status} />
+      <div className="relative flex items-center gap-4 flex-wrap sm:flex-nowrap">
+        {/* Unit number block (right) */}
+        <div className="shrink-0 min-w-[88px]">
+          <div className="text-[11px] text-muted-foreground">رقم الوحدة</div>
+          <div className="text-2xl font-bold mt-0.5">{unit.unit_number}</div>
         </div>
-        <dl className="mt-4 space-y-2 text-sm">
+        {/* Horizontal data cells */}
+        <div className="flex-1 min-w-0 grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-x-5 gap-y-2 text-sm">
           {featured.map((c) => (
-            <Pair
-              key={c}
-              label={c}
-              value={
-                isPriceCol(c) ? (
+            <div key={c} className="min-w-0">
+              <div className="text-[11px] text-muted-foreground truncate">{c}</div>
+              <div className="text-sm font-medium truncate">
+                {isPriceCol(c) ? (
                   s.hidePrice ? (
                     <span className="text-muted-foreground italic">—</span>
                   ) : (
@@ -526,13 +523,15 @@ function UnitCard({
                   )
                 ) : (
                   unit.extra[c]
-                )
-              }
-            />
+                )}
+              </div>
+            </div>
           ))}
-        </dl>
-        <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
-          عرض التفاصيل ←
+        </div>
+        {/* Status + CTA (left) */}
+        <div className="shrink-0 flex items-center gap-3 ml-auto">
+          <StatusPill status={unit.status} />
+          <span className="hidden sm:inline text-xs text-brand whitespace-nowrap">التفاصيل ←</span>
         </div>
       </div>
     </button>
