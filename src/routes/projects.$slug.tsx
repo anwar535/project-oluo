@@ -104,10 +104,6 @@ function ProjectPage() {
   const [active, setActive] = useState<UnitRow | null>(null);
   const isMobile = useIsMobile();
 
-  // Auto-switch to grid/cards on mobile for better touch UX
-  useEffect(() => {
-    if (isMobile) setView("grid");
-  }, [isMobile]);
 
   const { data: units = [], isLoading } = useQuery({
     queryKey: ["units", project.id],
