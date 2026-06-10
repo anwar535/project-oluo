@@ -11,6 +11,24 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+import logo from "@/assets/logo.png";
+
+// Active style for the status filter buttons — mirrors the in-table StatusPill colors
+function statusBtnActive(status: string) {
+  switch (status) {
+    case "متاح":
+      return "bg-emerald-100 text-emerald-700 border-emerald-500";
+    case "محجوز":
+      return "bg-amber-100 text-amber-700 border-amber-500";
+    case "مباع":
+      return "bg-stone-200 text-stone-700 border-red-500";
+    case "غير متاح":
+      return "bg-stone-100 text-stone-600 border-gray-400";
+    case "كل الحالات":
+    default:
+      return "bg-navy text-navy-foreground border-navy";
+  }
+}
 
 
 // Status-driven visual treatment for a unit row/card
@@ -179,14 +197,23 @@ function ProjectPage() {
         )}
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
+        {/* Oluo logo top-left, white */}
+        <a href="/" className="absolute top-4 left-4 md:top-6 md:left-6 z-10 inline-flex items-center animate-fade-in-up" style={{ animationDelay: "0s" }}>
+          <img
+            src={logo}
+            alt="علو"
+            className="h-10 md:h-12 w-auto"
+            style={{ filter: "brightness(0) invert(1)" }}
+          />
+        </a>
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
           <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
             {primaryTitle}
           </h1>
-          <p className="mt-3 text-base md:text-lg font-semibold text-amber-300 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <p className="mt-3 text-base md:text-lg font-semibold text-brand drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             {complexLabel}
           </p>
-          <p className="mt-1 text-sm md:text-base text-amber-200/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
+          <p className="mt-1 text-sm md:text-base text-brand/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
             {districtLine}
           </p>
         </div>
@@ -195,18 +222,18 @@ function ProjectPage() {
 
 
 
-      {/* Filters: search + status as a horizontal button group (auto-filtering) */}
+      {/* Filters: units count + status as a horizontal button group (auto-filtering) */}
       <section className="mx-auto max-w-7xl px-6 mt-8">
         {units.length > 0 && (
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="search"
-                value={search_}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث برقم الوحدة أو أي بيان..."
-                className="flex-1 min-w-[220px] h-11 rounded-lg border border-border bg-card px-4 text-right text-sm focus:outline-none focus:border-brand"
-              />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="inline-flex items-center gap-2 h-11 px-4 rounded-lg border border-brand/30 bg-brand/10 text-sm">
+                <span className="text-muted-foreground">عدد الوحدات</span>
+                <span className="text-brand font-bold text-base">{visible.length}</span>
+                {visible.length !== counts.total && (
+                  <span className="text-[11px] text-muted-foreground">/ {counts.total}</span>
+                )}
+              </div>
               <div className="inline-flex rounded-lg border border-border bg-card overflow-hidden">
                 <button
                   onClick={() => setView("table")}
@@ -230,7 +257,7 @@ function ProjectPage() {
                 </button>
               </div>
             </div>
-            {/* Status as full button group (no dropdown) */}
+            {/* Status as full button group (no dropdown) — colors mirror the in-table status pills */}
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTS.map((f) => {
                 const active = statusFilter === f;
@@ -240,7 +267,7 @@ function ProjectPage() {
                     onClick={() => setStatusFilter(f)}
                     className={`px-4 h-10 rounded-full text-sm font-medium border transition ${
                       active
-                        ? "bg-navy text-navy-foreground border-navy shadow-sm"
+                        ? `${statusBtnActive(f)} shadow-sm`
                         : "bg-card text-foreground border-border hover:bg-muted"
                     }`}
                   >
@@ -272,7 +299,7 @@ function ProjectPage() {
             <UnitsTable units={visible} columns={publicColumns} onOpen={setActive} />
           )
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+          <div className="flex flex-col gap-4 w-full">
             {visible.map((u, i) => (
               <div key={u.id} className="animate-slide-in-right w-full" style={{ animationDelay: `${i * 0.05}s` }}>
                 <UnitCard unit={u} columns={publicColumns} onClick={() => setActive(u)} />
@@ -291,34 +318,26 @@ function ProjectPage() {
         </div>
       </section>
 
-      {/* Contact — unified single number, phone right, actions left */}
+      {/* Contact — unified number + reservation numbers, each on its own balanced row */}
       <section id="contact" className="bg-muted/40 border-t border-border mt-10 animate-fade-in-up">
         <div className="mx-auto max-w-3xl px-6 py-10">
-          <h2 className="text-center text-xl font-bold text-navy">الرقم الموحد</h2>
+          <h2 className="text-center text-xl font-bold text-navy">تواصل معنا</h2>
           <div className="mx-auto mt-2 mb-6 h-0.5 w-16 bg-brand rounded-full" />
-          <div className="rounded-2xl border border-border bg-card p-5 flex flex-row-reverse items-center justify-between gap-4 flex-wrap">
-            <div className="text-right">
-              <div className="text-[11px] text-muted-foreground mb-0.5">للحجز والاستفسار</div>
-              <div className="text-2xl font-bold tracking-wider" dir="ltr">{UNIFIED_PHONE}</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={telHref(UNIFIED_PHONE)}
-                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg border border-brand/40 text-brand text-sm font-medium hover:bg-brand/10 transition"
-              >
-                <Phone className="w-4 h-4" />
-                اتصال
-              </a>
-              <a
-                href={waHref(UNIFIED_PHONE, `السلام عليكم، أرغب بالاستفسار عن ${project.name}`)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition"
-              >
-                <MessageCircle className="w-4 h-4" />
-                واتساب
-              </a>
-            </div>
+          <div className="space-y-3">
+            <ContactRow
+              label="الرقم الموحد"
+              phone={UNIFIED_PHONE}
+              waText={`السلام عليكم، أرغب بالاستفسار عن ${project.name}`}
+              highlight
+            />
+            {CONTACT_PHONES.map((p, idx) => (
+              <ContactRow
+                key={p}
+                label={idx === 0 ? "للحجز والاستفسار" : "\u00A0"}
+                phone={p}
+                waText={`السلام عليكم، أرغب بالاستفسار عن ${project.name}`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -473,33 +492,30 @@ function UnitCard({
   onClick: () => void;
 }) {
   const s = statusStyle(unit.status);
-  // Show up to first 3 non-features columns + price if present
   const featured = columns
     .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
-    .slice(0, 4);
+    .slice(0, 5);
   return (
     <button
       onClick={onClick}
-      className={`relative text-right bg-card rounded-xl border-2 ${s.border} p-5 hover:shadow-md transition-all overflow-hidden`}
+      className={`relative w-full text-right bg-card rounded-xl border-2 ${s.border} px-4 sm:px-5 py-4 hover:shadow-md transition-all overflow-hidden`}
     >
       {s.overlay && (
         <div className={`absolute inset-0 pointer-events-none ${s.overlay}`} />
       )}
-      <div className="relative">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">رقم الوحدة</div>
-            <div className="text-2xl font-bold mt-1">{unit.unit_number}</div>
-          </div>
-          <StatusPill status={unit.status} />
+      <div className="relative flex items-center gap-4 flex-wrap sm:flex-nowrap">
+        {/* Unit number block (right) */}
+        <div className="shrink-0 min-w-[88px]">
+          <div className="text-[11px] text-muted-foreground">رقم الوحدة</div>
+          <div className="text-2xl font-bold mt-0.5">{unit.unit_number}</div>
         </div>
-        <dl className="mt-4 space-y-2 text-sm">
+        {/* Horizontal data cells */}
+        <div className="flex-1 min-w-0 grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-x-5 gap-y-2 text-sm">
           {featured.map((c) => (
-            <Pair
-              key={c}
-              label={c}
-              value={
-                isPriceCol(c) ? (
+            <div key={c} className="min-w-0">
+              <div className="text-[11px] text-muted-foreground truncate">{c}</div>
+              <div className="text-sm font-medium truncate">
+                {isPriceCol(c) ? (
                   s.hidePrice ? (
                     <span className="text-muted-foreground italic">—</span>
                   ) : (
@@ -507,13 +523,15 @@ function UnitCard({
                   )
                 ) : (
                   unit.extra[c]
-                )
-              }
-            />
+                )}
+              </div>
+            </div>
           ))}
-        </dl>
-        <div className="mt-4 pt-3 border-t border-border text-xs text-brand">
-          عرض التفاصيل ←
+        </div>
+        {/* Status + CTA (left) */}
+        <div className="shrink-0 flex items-center gap-3 ml-auto">
+          <StatusPill status={unit.status} />
+          <span className="hidden sm:inline text-xs text-brand whitespace-nowrap">التفاصيل ←</span>
         </div>
       </div>
     </button>
@@ -529,23 +547,42 @@ function Pair({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function ContactCard({ phone }: { phone: string }) {
+function ContactRow({
+  label,
+  phone,
+  waText,
+  highlight,
+}: {
+  label: string;
+  phone: string;
+  waText?: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="bg-card rounded-xl border border-border p-5 text-center">
-      <div className="text-xl font-bold tracking-wider" dir="ltr">{phone}</div>
-      <div className="mt-4 flex justify-center gap-2">
+    <div
+      className={`rounded-xl border p-4 flex items-center justify-between gap-3 flex-wrap ${
+        highlight ? "border-brand/40 bg-brand/5" : "border-border bg-card"
+      }`}
+    >
+      <div className="text-right min-w-0">
+        <div className="text-[11px] text-muted-foreground mb-0.5">{label}</div>
+        <div className="text-lg sm:text-xl font-bold tracking-wider" dir="ltr">
+          {phone}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
         <a
           href={telHref(phone)}
-          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition inline-flex items-center gap-1.5"
+          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 rounded-lg border border-brand/40 text-brand text-sm font-medium hover:bg-brand/10 transition"
         >
           <Phone className="w-4 h-4" />
           اتصال
         </a>
         <a
-          href={waHref(phone)}
+          href={waHref(phone, waText)}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition inline-flex items-center gap-1.5"
+          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition"
         >
           <MessageCircle className="w-4 h-4" />
           واتساب
