@@ -61,6 +61,8 @@ export const Route = createFileRoute("/projects/$slug")({
 
 const STATUS_OPTS = ["كل الحالات", "متاح", "محجوز", "مباع", "غير متاح"] as const;
 const CONTACT_PHONES = ["0570020095", "0570020093", "0554745500"];
+const UNIFIED_PHONE = "9200022287";
+
 
 // Normalize a local Saudi number (05XXXXXXXX) to international form 9665XXXXXXXX (no plus, no leading 0)
 function toIntl(phone: string) {
