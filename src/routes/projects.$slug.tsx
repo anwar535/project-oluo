@@ -548,23 +548,42 @@ function Pair({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function ContactCard({ phone }: { phone: string }) {
+function ContactRow({
+  label,
+  phone,
+  waText,
+  highlight,
+}: {
+  label: string;
+  phone: string;
+  waText?: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="bg-card rounded-xl border border-border p-5 text-center">
-      <div className="text-xl font-bold tracking-wider" dir="ltr">{phone}</div>
-      <div className="mt-4 flex justify-center gap-2">
+    <div
+      className={`rounded-xl border p-4 flex items-center justify-between gap-3 flex-wrap ${
+        highlight ? "border-brand/40 bg-brand/5" : "border-border bg-card"
+      }`}
+    >
+      <div className="text-right min-w-0">
+        <div className="text-[11px] text-muted-foreground mb-0.5">{label}</div>
+        <div className="text-lg sm:text-xl font-bold tracking-wider" dir="ltr">
+          {phone}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
         <a
           href={telHref(phone)}
-          className="px-4 py-2 rounded-md bg-brand/15 text-brand text-sm hover:bg-brand/25 transition inline-flex items-center gap-1.5"
+          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 rounded-lg border border-brand/40 text-brand text-sm font-medium hover:bg-brand/10 transition"
         >
           <Phone className="w-4 h-4" />
           اتصال
         </a>
         <a
-          href={waHref(phone)}
+          href={waHref(phone, waText)}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-2 rounded-md bg-emerald-100 text-emerald-700 text-sm hover:bg-emerald-200 transition inline-flex items-center gap-1.5"
+          className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-4 rounded-lg bg-emerald-100 text-emerald-700 text-sm font-medium hover:bg-emerald-200 transition"
         >
           <MessageCircle className="w-4 h-4" />
           واتساب
