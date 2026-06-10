@@ -89,6 +89,10 @@ function isFeaturesCol(label: string) {
 function isVideoCol(label: string) {
   return /فيديو|video|3d/i.test(label);
 }
+function isAreaCol(label: string) {
+  return /مساحة|area/i.test(label) && !/مبنية|built|جزء/i.test(label);
+}
+
 
 function ProjectPage() {
   const { project } = Route.useLoaderData();
