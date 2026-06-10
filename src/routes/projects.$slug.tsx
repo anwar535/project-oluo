@@ -566,8 +566,6 @@ function UnitDialog({
   onClose: () => void;
   project: ProjectRow;
 }) {
-  const primaryPhone = CONTACT_PHONES[0];
-
   const dataCols = unit
     ? columns.filter((c) => !isFeaturesCol(c) && !isVideoCol(c))
     : [];
@@ -580,15 +578,20 @@ function UnitDialog({
   const videoUrl = videoCol && unit ? unit.extra?.[videoCol] : undefined;
 
   return (
-    <Dialog open={!!unit} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
+    <Sheet open={!!unit} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        dir="rtl"
+        className="max-h-[92vh] overflow-y-auto rounded-t-2xl p-0"
+      >
         {unit && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl text-right">
+          <div className="px-5 pb-6 pt-5">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border" />
+            <SheetHeader>
+              <SheetTitle className="text-xl text-right">
                 وحدة رقم {unit.unit_number}
-              </DialogTitle>
-            </DialogHeader>
+              </SheetTitle>
+            </SheetHeader>
 
             <div className="mt-2">
               <StatusPill status={unit.status} />
@@ -614,13 +617,12 @@ function UnitDialog({
                 href={videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
+                className="mt-4 inline-flex w-full min-h-[44px] items-center justify-center gap-2 px-5 py-3 rounded-lg bg-gradient-to-r from-brand to-brand/80 text-white font-bold shadow hover:opacity-95 transition"
               >
                 <Video className="w-5 h-5" />
                 مشاهدة فيديو 3D للوحدة
               </a>
             )}
-
 
             {dataCols.length > 0 && (
               <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -648,30 +650,38 @@ function UnitDialog({
               </div>
             ))}
 
-            <div className="mt-6 pt-4 border-t border-border flex flex-col sm:flex-row gap-3">
-              <a
-                href={waHref(primaryPhone, unit ? `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}` : undefined)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition"
-              >
-                <MessageCircle className="w-5 h-5" />
-                تواصل واتساب
-              </a>
-              <a
-                href={telHref(primaryPhone)}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-navy text-navy-foreground font-medium hover:bg-navy/90 transition"
-              >
-                <Phone className="w-5 h-5" />
-                اتصل بنا
-              </a>
+            {/* Unified contact box */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="rounded-xl border border-border bg-muted/40 p-4 text-center">
+                <div className="text-xs text-muted-foreground mb-1">للحجز والاستفسار</div>
+                <div className="text-xl font-bold tracking-wider" dir="ltr">{UNIFIED_PHONE}</div>
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <a
+                    href={telHref(UNIFIED_PHONE)}
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg border border-brand/40 text-brand font-medium hover:bg-brand/10 transition"
+                  >
+                    <Phone className="w-5 h-5" />
+                    اتصال
+                  </a>
+                  <a
+                    href={waHref(UNIFIED_PHONE, `السلام عليكم، أرغب بالاستفسار عن ${project.name} - وحدة رقم ${unit.unit_number}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-emerald-100 text-emerald-700 font-medium hover:bg-emerald-200 transition"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                    واتساب
+                  </a>
+                </div>
+              </div>
             </div>
-          </>
+          </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
+
 
 function DataBox({
   label,
