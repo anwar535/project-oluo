@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { List, LayoutGrid, Phone, MessageCircle, Video, X } from "lucide-react";
+import { List, LayoutGrid, Phone, MessageCircle, Video } from "lucide-react";
 import {
   Sheet,
   SheetContent,
