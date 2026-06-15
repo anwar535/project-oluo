@@ -758,20 +758,20 @@ function MobileUnitsTable({
     <div className="w-full overflow-hidden rounded-xl border border-border bg-card">
       <table
         className="w-full text-right text-[13px]"
-        style={{ tableLayout: "fixed" }}
+        style={{ tableLayout: "fixed", borderSpacing: "0 6px", borderCollapse: "separate" }}
       >
         <colgroup>
-          <col style={{ width: "34%" }} />
-          <col style={{ width: "22%" }} />
-          <col style={{ width: "32%" }} />
-          <col style={{ width: "12%" }} />
+          <col style={{ width: "16%" }} />
+          <col style={{ width: "28%" }} />
+          <col style={{ width: "36%" }} />
+          <col style={{ width: "20%" }} />
         </colgroup>
         <thead className="bg-muted/50 text-muted-foreground text-[12px]">
           <tr>
-            <th className="px-2 py-2 font-medium">الوحدة</th>
-            <th className="px-2 py-2 font-medium">المساحة</th>
-            <th className="px-2 py-2 font-medium">السعر</th>
-            <th className="px-2 py-2 font-medium">الحالة</th>
+            <th className="px-1 py-2 font-medium">الوحدة</th>
+            <th className="px-1 py-2 font-medium">المساحة</th>
+            <th className="px-1 py-2 font-medium">السعر</th>
+            <th className="px-1 py-2 font-medium">الحالة</th>
           </tr>
         </thead>
         <tbody>
@@ -783,12 +783,12 @@ function MobileUnitsTable({
               <tr
                 key={u.id}
                 onClick={() => onOpen(u)}
-                className={`border-t border-border cursor-pointer active:bg-muted/60 animate-slide-in-right ${s.overlay}`}
-                style={{ animationDelay: `${i * 0.05}s`, minHeight: 44 }}
+                className={`cursor-pointer active:bg-muted/60 animate-slide-in-right ${s.overlay}`}
+                style={{ animationDelay: `${i * 0.05}s` }}
               >
-                <td className={`px-2 py-3 font-bold truncate border-r-4 ${s.border}`}>{u.unit_number}</td>
-                <td className="px-2 py-3 truncate">{area || "—"}</td>
-                <td className="px-2 py-3 truncate">
+                <td className={`px-1 py-2.5 font-bold truncate border-r-4 ${s.border} bg-card`}>{u.unit_number}</td>
+                <td className="px-1 py-2.5 truncate bg-card">{area || "—"}</td>
+                <td className="px-1 py-2.5 truncate bg-card">
                   {s.hidePrice ? (
                     <span className="text-muted-foreground italic">—</span>
                   ) : price ? (
@@ -797,7 +797,7 @@ function MobileUnitsTable({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
-                <td className="px-1 py-3">
+                <td className="px-1 py-2.5 bg-card">
                   <StatusPill status={u.status} />
                 </td>
               </tr>
