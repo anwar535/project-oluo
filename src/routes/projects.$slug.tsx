@@ -314,7 +314,7 @@ function ProjectPage() {
       {/* Mandatory disclaimer notes — soft gold, right-aligned */}
       <section className="mx-auto max-w-7xl px-6 animate-fade-in-up">
         <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-5 py-4 text-xs sm:text-sm leading-7 text-amber-900 text-right">
-          • تسري الأسعار حتى تاريخ 2026/06/30.<br />
+          • تسري الأسعار حتى تاريخ 2026/07/31.<br />
           • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
         </div>
       </section>
