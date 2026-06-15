@@ -37,12 +37,12 @@ function statusStyle(status: string) {
     case "متاح":
       return { border: "border-emerald-500", overlay: "", hidePrice: false };
     case "محجوز":
-      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: true };
+      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: false };
     case "مباع":
-      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: true };
+      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: false };
     case "غير متاح":
     default:
-      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: true };
+      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: false };
   }
 }
 
