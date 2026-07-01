@@ -15,7 +15,7 @@ import type { ProjectStats } from "@/lib/property-numbers";
 
 export type ShowcaseProject = ProjectRow & ProjectStats;
 
-const HEADER_OFFSET_PX = 80; // matches SiteHeader's sticky height
+const HEADER_OFFSET_PX = 80; // يطابق ارتفاع الهيدر الثابت في الموقع
 
 export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProject[] }) {
   const count = projects.length;
@@ -36,8 +36,6 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
 
   if (count === 0) return null;
 
-  // With a single project, or when the user prefers reduced motion,
-  // skip the scroll-jacked pin entirely and show one calm static slide.
   if (count === 1 || prefersReducedMotion) {
     return (
       <section className="relative mx-auto max-w-7xl px-3 sm:px-6 mt-6">
@@ -47,7 +45,7 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
   }
 
   return (
-    <section ref={containerRef} style={{ height: `${count * 100}vh` }} className="relative">
+    <section ref={containerRef} style={{ height: `${count * 120}vh` }} className="relative">
       <div
         className="sticky overflow-hidden bg-black"
         style={{
@@ -61,6 +59,7 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
             project={p}
             index={i}
             count={count}
+            active={active === i}
             scrollYProgress={scrollYProgress}
           />
         ))}
@@ -79,7 +78,7 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
           />
         ))}
 
-        {/* Progress indicator */}
+        {/* نقاط مؤشر التقدم */}
         <div className="absolute bottom-5 inset-x-0 z-20 flex justify-center gap-2">
           {projects.map((p, i) => (
             <span
@@ -91,7 +90,7 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
           ))}
         </div>
 
-        {/* Scroll hint */}
+        {/* تلميح التمرير */}
         <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 text-[11px] tracking-[0.3em] text-white/50 uppercase hidden md:block">
           Scroll
         </div>
@@ -120,22 +119,31 @@ function BackgroundLayer({
   project,
   index,
   count,
+  active,
   scrollYProgress,
 }: {
   project: ShowcaseProject;
   index: number;
   count: number;
+  active: boolean;
   scrollYProgress: MotionValue<number>;
 }) {
   const { points, isFirst, isLast } = useSlideRange(index, count);
   const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
   const scaleValues = isFirst ? [1, 1.08, 1.14] : isLast ? [1, 1.06, 1.12] : [1, 1.05, 1.1, 1.14];
 
-  const opacity = useTransform(scrollYProgress, points, opacityValues);
+  const transformOpacity = useTransform(scrollYProgress, points, opacityValues);
   const scale = useTransform(scrollYProgress, points, scaleValues);
 
   return (
-    <motion.div style={{ opacity }} className="absolute inset-0 will-change-[opacity]">
+    <motion.div
+      style={{
+        opacity: active ? transformOpacity : 0,
+        pointerEvents: active ? "auto" : "none",
+        display: active ? "block" : "none",
+      }}
+      className="absolute inset-0 transition-opacity duration-300 will-change-[opacity]"
+    >
       {project.cover_image ? (
         <motion.img
           src={project.cover_image}
@@ -167,7 +175,7 @@ function SlideContent({
   const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
   const yValues = isFirst ? [0, 0, -32] : isLast ? [32, 0, 0] : [32, 0, 0, -32];
 
-  const opacity = useTransform(scrollYProgress, points, opacityValues);
+  const transformOpacity = useTransform(scrollYProgress, points, opacityValues);
   const y = useTransform(scrollYProgress, points, yValues);
 
   const hasPrice = project.minPrice !== null;
@@ -175,8 +183,13 @@ function SlideContent({
 
   return (
     <motion.div
-      style={{ opacity, y }}
-      className="absolute inset-0 z-10 flex flex-col justify-end pointer-events-none"
+      style={{
+        opacity: active ? transformOpacity : 0,
+        y,
+        display: active ? "flex" : "none",
+        pointerEvents: active ? "auto" : "none",
+      }}
+      className="absolute inset-0 z-10 flex flex-col justify-end transition-all duration-200"
     >
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 pb-20 sm:pb-16 pointer-events-auto">
         <p className="text-brand text-xs sm:text-sm tracking-[0.35em] uppercase mb-2">
@@ -185,9 +198,7 @@ function SlideContent({
         <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]">
           {project.name}
         </h2>
-        {project.district && (
-          <p className="mt-2 text-white/70 text-sm sm:text-base">{project.district}</p>
-        )}
+        {project.district && <p className="mt-2 text-white/70 text-sm sm:text-base">{project.district}</p>}
 
         <div className="mt-6 sm:mt-8 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-10 gap-y-5 sm:gap-x-14">
           {hasArea && (
@@ -200,20 +211,12 @@ function SlideContent({
             />
           )}
           {hasPrice && (
-            <StatFigure
-              label="السعر يبدأ من"
-              active={active}
-              value={project.minPrice!}
-              unit="ريال"
-              highlight
-            />
+            <StatFigure label="السعر يبدأ من" active={active} value={project.minPrice!} unit="ريال" highlight />
           )}
           <div className="flex flex-col justify-end">
             <span className="text-[11px] sm:text-xs text-white/50 mb-1">التوفر</span>
             <span className="text-lg sm:text-xl font-bold text-white">
-              {project.availableCount > 0
-                ? `${formatNumber(project.availableCount)} وحدة متاحة`
-                : project.status}
+              {project.availableCount > 0 ? `${formatNumber(project.availableCount)} وحدة متاحة` : project.status}
             </span>
           </div>
         </div>
@@ -287,15 +290,7 @@ function StaticSlide({ project }: { project: ShowcaseProject }) {
         <h2 className="text-3xl sm:text-5xl font-black text-white">{project.name}</h2>
         <div className="mt-6 flex flex-wrap gap-x-10 gap-y-4">
           {hasArea && <StatFigure label="المساحة" active value={project.maxArea!} unit="م²" />}
-          {hasPrice && (
-            <StatFigure
-              label="السعر يبدأ من"
-              active
-              value={project.minPrice!}
-              unit="ريال"
-              highlight
-            />
-          )}
+          {hasPrice && <StatFigure label="السعر يبدأ من" active value={project.minPrice!} unit="ريال" highlight />}
         </div>
         <Link
           to="/projects/$slug"
