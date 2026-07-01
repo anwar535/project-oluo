@@ -1,132 +1,310 @@
+import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { motion, type Variants } from "framer-motion";
-import { MapPin, ArrowLeft, Building2 } from "lucide-react";
+import {
+  motion,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { formatNumber } from "@/lib/property-numbers";
 import type { ProjectRow } from "@/lib/types";
-import { TiltCard } from "./TiltCard";
-import { AnimatedNumber } from "./AnimatedNumber";
+import type { ProjectStats } from "@/lib/property-numbers";
 
-type Props = {
-  projects: ProjectRow[];
-  counts?: Record<string, number>;
-};
+export type ShowcaseProject = ProjectRow & ProjectStats;
 
-const container: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
+const HEADER_OFFSET_PX = 80; // matches SiteHeader's sticky height
 
-const item: Variants = {
-  hidden: { opacity: 0, y: 40 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
+export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProject[] }) {
+  const count = projects.length;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const [active, setActive] = useState(0);
 
-function statusTone(status: string) {
-  switch (status) {
-    case "متاح للبيع":
-      return "bg-emerald-500/90";
-    case "البيع على الخارطة":
-      return "bg-sky-500/90";
-    case "قريباً":
-      return "bg-brand text-black";
-    case "مُباع بالكامل":
-      return "bg-stone-600/90";
-    default:
-      return "bg-stone-600/90";
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+
+  useMotionValueEvent(scrollYProgress, "change", (v) => {
+    if (count < 2) return;
+    const idx = Math.min(count - 1, Math.max(0, Math.floor(v * count)));
+    setActive((prev) => (prev === idx ? prev : idx));
+  });
+
+  if (count === 0) return null;
+
+  // With a single project, or when the user prefers reduced motion,
+  // skip the scroll-jacked pin entirely and show one calm static slide.
+  if (count === 1 || prefersReducedMotion) {
+    return (
+      <section className="relative mx-auto max-w-7xl px-3 sm:px-6 mt-6">
+        <StaticSlide project={projects[0]} />
+      </section>
+    );
   }
+
+  return (
+    <section ref={containerRef} style={{ height: `${count * 100}vh` }} className="relative">
+      <div
+        className="sticky overflow-hidden bg-black"
+        style={{
+          top: HEADER_OFFSET_PX,
+          height: `calc(100vh - ${HEADER_OFFSET_PX}px)`,
+        }}
+      >
+        {projects.map((p, i) => (
+          <BackgroundLayer
+            key={p.id}
+            project={p}
+            index={i}
+            count={count}
+            scrollYProgress={scrollYProgress}
+          />
+        ))}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-transparent to-black/60 pointer-events-none" />
+
+        {projects.map((p, i) => (
+          <SlideContent
+            key={p.id}
+            project={p}
+            index={i}
+            count={count}
+            active={active === i}
+            scrollYProgress={scrollYProgress}
+          />
+        ))}
+
+        {/* Progress indicator */}
+        <div className="absolute bottom-5 inset-x-0 z-20 flex justify-center gap-2">
+          {projects.map((p, i) => (
+            <span
+              key={p.id}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === active ? "w-8 bg-brand" : "w-1.5 bg-white/30"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Scroll hint */}
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-20 text-[11px] tracking-[0.3em] text-white/50 uppercase hidden md:block">
+          Scroll
+        </div>
+      </div>
+    </section>
+  );
 }
 
-export function ProjectsCinematicShowcase({ projects, counts = {} }: Props) {
+function useSlideRange(index: number, count: number) {
+  const segStart = index / count;
+  const segEnd = (index + 1) / count;
+  const fade = (segEnd - segStart) * 0.32;
+  const isFirst = index === 0;
+  const isLast = index === count - 1;
+
+  const points = isFirst
+    ? [segStart, segEnd - fade, segEnd]
+    : isLast
+      ? [segStart, segStart + fade, segEnd]
+      : [segStart, segStart + fade, segEnd - fade, segEnd];
+
+  return { points, isFirst, isLast, segStart, segEnd };
+}
+
+function BackgroundLayer({
+  project,
+  index,
+  count,
+  scrollYProgress,
+}: {
+  project: ShowcaseProject;
+  index: number;
+  count: number;
+  scrollYProgress: MotionValue<number>;
+}) {
+  const { points, isFirst, isLast } = useSlideRange(index, count);
+  const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
+  const scaleValues = isFirst ? [1, 1.08, 1.14] : isLast ? [1, 1.06, 1.12] : [1, 1.05, 1.1, 1.14];
+
+  const opacity = useTransform(scrollYProgress, points, opacityValues);
+  const scale = useTransform(scrollYProgress, points, scaleValues);
+
+  return (
+    <motion.div style={{ opacity }} className="absolute inset-0 will-change-[opacity]">
+      {project.cover_image ? (
+        <motion.img
+          src={project.cover_image}
+          alt={project.name}
+          style={{ scale }}
+          className="h-full w-full object-cover will-change-transform"
+        />
+      ) : (
+        <div className="h-full w-full bg-gradient-to-br from-navy to-stone-800" />
+      )}
+    </motion.div>
+  );
+}
+
+function SlideContent({
+  project,
+  index,
+  count,
+  active,
+  scrollYProgress,
+}: {
+  project: ShowcaseProject;
+  index: number;
+  count: number;
+  active: boolean;
+  scrollYProgress: MotionValue<number>;
+}) {
+  const { points, isFirst, isLast } = useSlideRange(index, count);
+  const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
+  const yValues = isFirst ? [0, 0, -32] : isLast ? [32, 0, 0] : [32, 0, 0, -32];
+
+  const opacity = useTransform(scrollYProgress, points, opacityValues);
+  const y = useTransform(scrollYProgress, points, yValues);
+
+  const hasPrice = project.minPrice !== null;
+  const hasArea = project.minArea !== null;
+
   return (
     <motion.div
-      variants={container}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.05 }}
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      style={{ opacity, y }}
+      className="absolute inset-0 z-10 flex flex-col justify-end pointer-events-none"
     >
-      {projects.map((p) => (
-        <motion.div key={p.id} variants={item}>
-          <TiltCard className="h-full">
-            <Link
-              to="/projects/$slug"
-              params={{ slug: p.slug }}
-              className="group relative block h-full overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-2xl hover:border-brand/60 transition-all"
-            >
-              <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                {p.cover_image && (
-                  <motion.img
-                    src={p.cover_image}
-                    alt={p.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                    initial={{ scale: 1.08 }}
-                    whileHover={{ scale: 1.15 }}
-                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                <span
-                  className={`absolute top-3 right-3 px-3 py-1 rounded-full text-white text-xs shadow-md ${statusTone(
-                    p.status,
-                  )}`}
-                >
-                  {p.status}
-                </span>
-                <div className="absolute bottom-3 left-3 right-3 text-white flex items-end justify-between gap-2">
-                  <div className="text-right">
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-brand/90">
-                      {p.type || p.category}
-                    </p>
-                    <h3 className="text-xl font-black leading-tight drop-shadow">
-                      {p.name}
-                    </h3>
-                  </div>
-                  {counts[p.id] != null && (
-                    <div className="text-right bg-black/40 backdrop-blur px-2.5 py-1 rounded-lg border border-white/10">
-                      <div className="text-[10px] text-white/70">وحدات</div>
-                      <AnimatedNumber
-                        value={counts[p.id]}
-                        className="text-brand font-bold text-lg leading-none"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 pb-20 sm:pb-16 pointer-events-auto">
+        <p className="text-brand text-xs sm:text-sm tracking-[0.35em] uppercase mb-2">
+          {project.type || project.category}
+        </p>
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)]">
+          {project.name}
+        </h2>
+        {project.district && (
+          <p className="mt-2 text-white/70 text-sm sm:text-base">{project.district}</p>
+        )}
 
-              <div className="p-5 text-right">
-                {p.district && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 justify-end">
-                    <span>{p.district}</span>
-                    <MapPin className="h-4 w-4 text-brand" />
-                  </p>
-                )}
-                {p.tagline && (
-                  <p className="mt-2 text-sm text-foreground/80 line-clamp-2">
-                    {p.tagline}
-                  </p>
-                )}
+        <div className="mt-6 sm:mt-8 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-10 gap-y-5 sm:gap-x-14">
+          {hasArea && (
+            <StatFigure
+              label="المساحة"
+              active={active}
+              value={project.maxArea ?? project.minArea!}
+              rangeFrom={project.minArea !== project.maxArea ? project.minArea! : undefined}
+              unit="م²"
+            />
+          )}
+          {hasPrice && (
+            <StatFigure
+              label="السعر يبدأ من"
+              active={active}
+              value={project.minPrice!}
+              unit="ريال"
+              highlight
+            />
+          )}
+          <div className="flex flex-col justify-end">
+            <span className="text-[11px] sm:text-xs text-white/50 mb-1">التوفر</span>
+            <span className="text-lg sm:text-xl font-bold text-white">
+              {project.availableCount > 0
+                ? `${formatNumber(project.availableCount)} وحدة متاحة`
+                : project.status}
+            </span>
+          </div>
+        </div>
 
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-sm">
-                  <span className="inline-flex items-center gap-1 text-brand font-semibold group-hover:gap-2 transition-all">
-                    عرض التفاصيل
-                    <ArrowLeft className="h-4 w-4" />
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    {p.category}
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </TiltCard>
-        </motion.div>
-      ))}
+        <Link
+          to="/projects/$slug"
+          params={{ slug: project.slug }}
+          className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand text-brand-foreground font-bold text-sm hover:brightness-110 active:scale-[0.97] transition-all"
+        >
+          استكشف المشروع
+          <span aria-hidden>←</span>
+        </Link>
+      </div>
     </motion.div>
+  );
+}
+
+function StatFigure({
+  label,
+  value,
+  rangeFrom,
+  unit,
+  active,
+  highlight,
+}: {
+  label: string;
+  value: number;
+  rangeFrom?: number;
+  unit: string;
+  active: boolean;
+  highlight?: boolean;
+}) {
+  return (
+    <div>
+      <span className="block text-[11px] sm:text-xs text-white/50 mb-1">{label}</span>
+      <span
+        className={`flex items-baseline gap-1.5 font-black tabular-nums leading-none ${
+          highlight ? "text-brand" : "text-white"
+        } text-3xl sm:text-4xl md:text-5xl`}
+      >
+        {rangeFrom !== undefined && (
+          <>
+            <AnimatedNumber value={rangeFrom} active={active} />
+            <span className="text-lg sm:text-xl font-medium opacity-60">-</span>
+          </>
+        )}
+        <AnimatedNumber value={value} active={active} />
+        <span className="text-sm sm:text-base font-medium opacity-70">{unit}</span>
+      </span>
+    </div>
+  );
+}
+
+function StaticSlide({ project }: { project: ShowcaseProject }) {
+  const hasPrice = project.minPrice !== null;
+  const hasArea = project.minArea !== null;
+  return (
+    <div className="relative rounded-2xl sm:rounded-[2rem] overflow-hidden bg-black min-h-[70vh] flex flex-col justify-end">
+      {project.cover_image && (
+        <img
+          src={project.cover_image}
+          alt={project.name}
+          className="absolute inset-0 h-full w-full object-cover opacity-90"
+        />
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/10" />
+      <div className="relative px-6 sm:px-10 pb-12 pt-16">
+        <p className="text-brand text-xs sm:text-sm tracking-[0.35em] uppercase mb-2">
+          {project.type || project.category}
+        </p>
+        <h2 className="text-3xl sm:text-5xl font-black text-white">{project.name}</h2>
+        <div className="mt-6 flex flex-wrap gap-x-10 gap-y-4">
+          {hasArea && <StatFigure label="المساحة" active value={project.maxArea!} unit="م²" />}
+          {hasPrice && (
+            <StatFigure
+              label="السعر يبدأ من"
+              active
+              value={project.minPrice!}
+              unit="ريال"
+              highlight
+            />
+          )}
+        </div>
+        <Link
+          to="/projects/$slug"
+          params={{ slug: project.slug }}
+          className="mt-8 inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand text-brand-foreground font-bold text-sm"
+        >
+          استكشف المشروع ←
+        </Link>
+      </div>
+    </div>
   );
 }
