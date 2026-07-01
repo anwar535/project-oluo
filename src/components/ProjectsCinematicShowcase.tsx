@@ -185,13 +185,14 @@ function SlideContent({
   return (
     <motion.div
       style={{
-        opacity: active ? transformOpacity : 0,
+        opacity: transformOpacity,
         y,
-        display: active ? "flex" : "none",
+        zIndex: active ? 11 : 10,
         pointerEvents: active ? "auto" : "none",
       }}
-      className="absolute inset-0 z-10 flex flex-col justify-end transition-all duration-200"
+      className="absolute inset-0 flex flex-col justify-end will-change-[opacity,transform]"
     >
+
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 pb-20 sm:pb-16 pointer-events-auto">
         <p className="text-brand text-xs sm:text-sm tracking-[0.35em] uppercase mb-2">
           {project.type || project.category}
