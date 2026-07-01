@@ -1,45 +1,45 @@
-import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
+import { useEffect, useState } from "react";
+import { animate, useMotionValue, useReducedMotion } from "framer-motion";
+import { formatNumber } from "@/lib/property-numbers";
 
-type Props = {
-  value: number;
-  format?: (n: number) => string;
-  duration?: number;
-  className?: string;
-};
-
+/**
+ * Counts up from 0 to `value` whenever `active` flips to true.
+ * Used for the big cinematic price/area figures.
+ */
 export function AnimatedNumber({
   value,
-  format = (n) => new Intl.NumberFormat("ar-SA").format(Math.round(n)),
-  duration = 1.2,
-  className,
-}: Props) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.4 });
-  const mv = useMotionValue(0);
-  const spring = useSpring(mv, { stiffness: 60, damping: 20, mass: 1 });
-  const [display, setDisplay] = useState("0");
+  active,
+  duration = 1.3,
+  format = formatNumber,
+}: {
+  value: number;
+  active: boolean;
+  duration?: number;
+  format?: (n: number) => string;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const motionValue = useMotionValue(0);
+  const [display, setDisplay] = useState(() => (prefersReducedMotion ? format(value) : format(0)));
 
   useEffect(() => {
-    if (inView) {
-      mv.set(value);
+    if (prefersReducedMotion) {
+      setDisplay(format(value));
+      return;
     }
-  }, [inView, value, mv]);
+    if (!active) return;
 
-  useEffect(() => {
-    const unsub = spring.on("change", (v) => setDisplay(format(v)));
-    return () => unsub();
-  }, [spring, format]);
+    motionValue.set(0);
+    const controls = animate(motionValue, value, {
+      duration,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    const unsubscribe = motionValue.on("change", (v) => setDisplay(format(v)));
+    return () => {
+      controls.stop();
+      unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, value, prefersReducedMotion]);
 
-  return (
-    <motion.span
-      ref={ref}
-      className={className}
-      initial={{ opacity: 0 }}
-      animate={inView ? { opacity: 1 } : {}}
-      transition={{ duration: 0.4 }}
-    >
-      {display}
-    </motion.span>
-  );
+  return <span dir="ltr">{display}</span>;
 }
