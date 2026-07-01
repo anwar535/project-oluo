@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { MapPin, ArrowLeft, Building2 } from "lucide-react";
 import type { ProjectRow } from "@/lib/types";
 import { TiltCard } from "./TiltCard";
@@ -10,19 +10,19 @@ type Props = {
   counts?: Record<string, number>;
 };
 
-const container = {
+const container: Variants = {
   hidden: {},
   show: {
     transition: { staggerChildren: 0.08, delayChildren: 0.1 },
   },
 };
 
-const item = {
+const item: Variants = {
   hidden: { opacity: 0, y: 40 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
 
@@ -67,7 +67,7 @@ export function ProjectsCinematicShowcase({ projects, counts = {} }: Props) {
                     className="h-full w-full object-cover"
                     initial={{ scale: 1.08 }}
                     whileHover={{ scale: 1.15 }}
-                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as const }}
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
