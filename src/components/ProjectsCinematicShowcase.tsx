@@ -165,6 +165,8 @@ function SlideContent({
 }) {
   const hasPrice = project.minPrice !== null;
   const hasArea = project.minArea !== null;
+  const areaMax = project.maxArea ?? project.minArea;
+  const showAreaRange = project.maxArea !== null && project.minArea !== project.maxArea;
 
   return (
     <motion.div
@@ -189,8 +191,8 @@ function SlideContent({
             <StatFigure
               label="المساحة"
               active={active}
-              value={project.maxArea ?? project.minArea!}
-              rangeFrom={project.minArea !== project.maxArea ? project.minArea! : undefined}
+              value={areaMax!}
+              rangeFrom={showAreaRange ? project.minArea! : undefined}
               unit="م²"
             />
           )}
@@ -225,6 +227,7 @@ function MobileCinematicStack({ projects }: { projects: ShowcaseProject[] }) {
         {projects.map((project) => {
           const hasPrice = project.minPrice !== null;
           const hasArea = project.minArea !== null;
+          const showAreaRange = project.maxArea !== null && project.minArea !== project.maxArea;
           return (
             <Link
               key={project.id}
@@ -258,7 +261,7 @@ function MobileCinematicStack({ projects }: { projects: ShowcaseProject[] }) {
                   {hasArea && (
                     <MobileStat
                       label="المساحة"
-                      value={`${formatNumber(project.minArea!)}${project.minArea !== project.maxArea ? `-${formatNumber(project.maxArea!)}` : ""}`}
+                      value={`${formatNumber(project.minArea!)}${showAreaRange ? `-${formatNumber(project.maxArea!)}` : ""}`}
                       unit="م²"
                     />
                   )}
