@@ -132,18 +132,19 @@ function BackgroundLayer({
   const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
   const scaleValues = isFirst ? [1, 1.08, 1.14] : isLast ? [1, 1.06, 1.12] : [1, 1.05, 1.1, 1.14];
 
-  const transformOpacity = useTransform(scrollYProgress, points, opacityValues);
+  const opacity = useTransform(scrollYProgress, points, opacityValues);
   const scale = useTransform(scrollYProgress, points, scaleValues);
 
   return (
     <motion.div
       style={{
-        opacity: active ? transformOpacity : 0,
-        pointerEvents: active ? "auto" : "none",
-        display: active ? "block" : "none",
+        opacity,
+        zIndex: active ? 2 : 1,
+        pointerEvents: "none",
       }}
-      className="absolute inset-0 transition-opacity duration-300 will-change-[opacity]"
+      className="absolute inset-0 will-change-[opacity]"
     >
+
       {project.cover_image ? (
         <motion.img
           src={project.cover_image}
@@ -184,13 +185,14 @@ function SlideContent({
   return (
     <motion.div
       style={{
-        opacity: active ? transformOpacity : 0,
+        opacity: transformOpacity,
         y,
-        display: active ? "flex" : "none",
+        zIndex: active ? 11 : 10,
         pointerEvents: active ? "auto" : "none",
       }}
-      className="absolute inset-0 z-10 flex flex-col justify-end transition-all duration-200"
+      className="absolute inset-0 flex flex-col justify-end will-change-[opacity,transform]"
     >
+
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 pb-20 sm:pb-16 pointer-events-auto">
         <p className="text-brand text-xs sm:text-sm tracking-[0.35em] uppercase mb-2">
           {project.type || project.category}
