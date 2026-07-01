@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { List, LayoutGrid, Phone, MessageCircle, Video } from "lucide-react";
 import {
   Sheet,
@@ -189,14 +190,18 @@ function ProjectPage() {
       {/* 1. Hero: cover image filling width, blended into a black gradient with titles overlaid */}
       <header className="relative w-full bg-black text-white overflow-hidden group">
         {project.cover_image && (
-          <img
+          <motion.img
             src={project.cover_image}
             alt={project.name}
-            className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-[600ms] ease-out group-hover:scale-105"
+            initial={{ scale: 1.06, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.92 }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
           />
         )}
         {/* Dark gradient overlay so titles remain readable and image blends into the black */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/55 to-black pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/55 to-black pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none" />
         {/* Oluo logo top-left, white */}
         <div className="absolute top-4 left-4 md:top-6 md:left-6 z-10 inline-flex items-center animate-fade-in-up pointer-events-none select-none" style={{ animationDelay: "0s" }}>
           <img
@@ -207,16 +212,43 @@ function ProjectPage() {
             draggable={false}
           />
         </div>
-        <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-12 md:pt-28 md:pb-20 text-center min-h-[58vh] md:min-h-[70vh] flex flex-col justify-end">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+        <div className="relative mx-auto max-w-7xl px-5 sm:px-6 pt-16 pb-8 md:pt-28 md:pb-12 text-center min-h-[66vh] md:min-h-[76vh] flex flex-col justify-end">
+          <motion.h1
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl md:text-7xl font-black tracking-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.75)]"
+          >
             {primaryTitle}
-          </h1>
-          <p className="mt-3 text-base md:text-lg font-semibold text-brand drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-3 text-base md:text-lg font-semibold text-brand drop-shadow-[0_1px_8px_rgba(0,0,0,0.65)]"
+          >
             {complexLabel}
-          </p>
-          <p className="mt-1 text-sm md:text-base text-brand/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.6)] animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-1 text-sm md:text-base text-brand/90 drop-shadow-[0_1px_8px_rgba(0,0,0,0.65)]"
+          >
             {districtLine}
-          </p>
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, delay: 0.42, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-7 grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3 text-right"
+          >
+            <HeroMetric label="إجمالي الوحدات" value={counts.total || units.length} />
+            <HeroMetric label="متاح" value={counts.available} tone="brand" />
+            <HeroMetric label="محجوز" value={counts.reserved} />
+            <HeroMetric label="مباع" value={counts.sold} />
+          </motion.div>
         </div>
       </header>
 
@@ -351,6 +383,25 @@ function ProjectPage() {
         onClose={() => setActive(null)}
         project={project}
       />
+    </div>
+  );
+}
+
+function HeroMetric({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "brand";
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md shadow-[0_16px_40px_rgba(0,0,0,0.18)]">
+      <div className="text-[11px] text-white/55 mb-1">{label}</div>
+      <div className={`text-2xl md:text-3xl font-black tabular-nums ${tone === "brand" ? "text-brand" : "text-white"}`}>
+        {value}
+      </div>
     </div>
   );
 }
