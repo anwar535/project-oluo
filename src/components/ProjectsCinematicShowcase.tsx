@@ -45,7 +45,12 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
   }
 
   return (
-    <section ref={containerRef} style={{ height: `${count * 120}vh` }} className="relative">
+    <>
+      <section className="md:hidden mt-5">
+        <MobileCinematicStack projects={projects} />
+      </section>
+
+      <section ref={containerRef} style={{ height: `${count * 120}vh` }} className="relative hidden md:block">
       <div
         className="sticky overflow-hidden bg-black"
         style={{
@@ -67,16 +72,7 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/25 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-transparent to-black/60 pointer-events-none" />
 
-        {projects.map((p, i) => (
-          <SlideContent
-            key={p.id}
-            project={p}
-            index={i}
-            count={count}
-            active={active === i}
-            scrollYProgress={scrollYProgress}
-          />
-        ))}
+        <SlideContent key={projects[active].id} project={projects[active]} active />
 
         {/* نقاط مؤشر التقدم */}
         <div className="absolute bottom-5 inset-x-0 z-20 flex justify-center gap-2">
@@ -95,7 +91,8 @@ export function ProjectsCinematicShowcase({ projects }: { projects: ShowcaseProj
           Scroll
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }
 
@@ -161,35 +158,20 @@ function BackgroundLayer({
 
 function SlideContent({
   project,
-  index,
-  count,
   active,
-  scrollYProgress,
 }: {
   project: ShowcaseProject;
-  index: number;
-  count: number;
   active: boolean;
-  scrollYProgress: MotionValue<number>;
 }) {
-  const { points, isFirst, isLast } = useSlideRange(index, count);
-  const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
-  const yValues = isFirst ? [0, 0, -32] : isLast ? [32, 0, 0] : [32, 0, 0, -32];
-
-  const transformOpacity = useTransform(scrollYProgress, points, opacityValues);
-  const y = useTransform(scrollYProgress, points, yValues);
-
   const hasPrice = project.minPrice !== null;
   const hasArea = project.minArea !== null;
 
   return (
     <motion.div
-      style={{
-        opacity: transformOpacity,
-        y,
-        zIndex: active ? 11 : 10,
-        pointerEvents: active ? "auto" : "none",
-      }}
+      initial={{ opacity: 0, y: 34 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      style={{ zIndex: 11, pointerEvents: "auto" }}
       className="absolute inset-0 flex flex-col justify-end will-change-[opacity,transform]"
     >
 
@@ -233,6 +215,96 @@ function SlideContent({
         </Link>
       </div>
     </motion.div>
+  );
+}
+
+function MobileCinematicStack({ projects }: { projects: ShowcaseProject[] }) {
+  return (
+    <div className="px-4 overflow-hidden">
+      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {projects.map((project) => {
+          const hasPrice = project.minPrice !== null;
+          const hasArea = project.minArea !== null;
+          return (
+            <Link
+              key={project.id}
+              to="/projects/$slug"
+              params={{ slug: project.slug }}
+              className="group relative min-w-[84vw] h-[72vh] max-h-[620px] snap-center overflow-hidden rounded-[1.75rem] bg-black shadow-2xl"
+            >
+              {project.cover_image ? (
+                <img
+                  src={project.cover_image}
+                  alt={project.name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-active:scale-105"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-navy to-stone-800" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/10" />
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent" />
+
+              <div className="relative z-10 flex h-full flex-col justify-end p-5 text-right">
+                <p className="text-brand text-[11px] tracking-[0.28em] uppercase mb-2">
+                  {project.type || project.category}
+                </p>
+                <h2 className="text-3xl font-black text-white leading-tight drop-shadow-[0_2px_14px_rgba(0,0,0,0.75)]">
+                  {project.name}
+                </h2>
+                {project.district && <p className="mt-2 text-white/75 text-sm">{project.district}</p>}
+
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  {hasArea && (
+                    <MobileStat
+                      label="المساحة"
+                      value={`${formatNumber(project.minArea!)}${project.minArea !== project.maxArea ? `-${formatNumber(project.maxArea!)}` : ""}`}
+                      unit="م²"
+                    />
+                  )}
+                  {hasPrice && (
+                    <MobileStat label="يبدأ من" value={formatNumber(project.minPrice!)} unit="ريال" highlight />
+                  )}
+                  <div className="col-span-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+                    <span className="block text-[11px] text-white/55 mb-1">التوفر</span>
+                    <span className="text-base font-bold text-white">
+                      {project.availableCount > 0 ? `${formatNumber(project.availableCount)} وحدة متاحة` : project.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-bold text-brand-foreground">
+                  استكشف المشروع
+                  <span aria-hidden>←</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MobileStat({
+  label,
+  value,
+  unit,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur-md">
+      <span className="block text-[11px] text-white/55 mb-1">{label}</span>
+      <span className={`text-lg font-black leading-none ${highlight ? "text-brand" : "text-white"}`} dir="ltr">
+        {value}
+      </span>
+      <span className="mr-1 text-xs text-white/65">{unit}</span>
+    </div>
   );
 }
 
