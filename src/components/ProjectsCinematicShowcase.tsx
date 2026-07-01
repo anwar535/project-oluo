@@ -132,18 +132,19 @@ function BackgroundLayer({
   const opacityValues = isFirst ? [1, 1, 0] : isLast ? [0, 1, 1] : [0, 1, 1, 0];
   const scaleValues = isFirst ? [1, 1.08, 1.14] : isLast ? [1, 1.06, 1.12] : [1, 1.05, 1.1, 1.14];
 
-  const transformOpacity = useTransform(scrollYProgress, points, opacityValues);
+  const opacity = useTransform(scrollYProgress, points, opacityValues);
   const scale = useTransform(scrollYProgress, points, scaleValues);
 
   return (
     <motion.div
       style={{
-        opacity: active ? transformOpacity : 0,
-        pointerEvents: active ? "auto" : "none",
-        display: active ? "block" : "none",
+        opacity,
+        zIndex: active ? 2 : 1,
+        pointerEvents: "none",
       }}
-      className="absolute inset-0 transition-opacity duration-300 will-change-[opacity]"
+      className="absolute inset-0 will-change-[opacity]"
     >
+
       {project.cover_image ? (
         <motion.img
           src={project.cover_image}
