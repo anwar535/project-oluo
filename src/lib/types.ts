@@ -11,6 +11,7 @@ export type ProjectRow = {
   sheet_tab: string | null;
   sort_order: number;
   columns: string[];
+  price_valid_until: string | null;
 };
 
 export type UnitRow = {

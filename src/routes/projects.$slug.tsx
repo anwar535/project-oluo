@@ -12,6 +12,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ProjectRow, UnitRow } from "@/lib/types";
+import { formatPriceValidityNotice } from "@/lib/sheet-normalize";
 import logo from "@/assets/logo.png";
 
 // Active style for the status filter buttons — mirrors the in-table StatusPill colors
@@ -38,12 +39,12 @@ function statusStyle(status: string) {
     case "متاح":
       return { border: "border-emerald-500", overlay: "", hidePrice: false };
     case "محجوز":
-      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: false };
+      return { border: "border-amber-500", overlay: "bg-amber-500/10", hidePrice: true };
     case "مباع":
-      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: false };
+      return { border: "border-red-500", overlay: "bg-red-500/10", hidePrice: true };
     case "غير متاح":
     default:
-      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: false };
+      return { border: "border-gray-400", overlay: "bg-gray-500/10", hidePrice: true };
   }
 }
 
@@ -346,7 +347,7 @@ function ProjectPage() {
       {/* Mandatory disclaimer notes — soft gold, right-aligned */}
       <section className="mx-auto max-w-7xl px-6 animate-fade-in-up">
         <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-5 py-4 text-xs sm:text-sm leading-7 text-amber-900 text-right">
-          • تسري الأسعار حتى تاريخ 2026/07/31.<br />
+          • {formatPriceValidityNotice(project.price_valid_until)}.<br />
           • جميع المعلومات المذكورة تقديرية، والمعتمد هي البيانات الواردة في الوثائق الصادرة من الجهات الرسمية.
         </div>
       </section>
@@ -493,12 +494,10 @@ function UnitsTable({
                   if (isPriceCol(c)) {
                     return (
                       <td key={c} className={`${cellBase} px-1.5 sm:px-4 whitespace-nowrap`}>
-                        {s.hidePrice ? (
-                          <span className="text-muted-foreground italic">—</span>
-                        ) : val ? (
-                          <span className="text-brand font-bold">{val}</span>
-                        ) : (
+                        {s.hidePrice || !val ? (
                           <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <span className="text-brand font-bold">{val}</span>
                         )}
                       </td>
                     );
@@ -545,7 +544,7 @@ function UnitCard({
 }) {
   const s = statusStyle(unit.status);
   const featured = columns
-    .filter((c) => !isFeaturesCol(c) && (unit.extra?.[c] ?? "").length > 0)
+    .filter((c) => !isFeaturesCol(c) && (isPriceCol(c) || (unit.extra?.[c] ?? "").length > 0))
     .slice(0, 5);
   return (
     <button
@@ -568,8 +567,8 @@ function UnitCard({
               <div className="text-[11px] text-muted-foreground truncate">{c}</div>
               <div className="text-sm font-medium truncate">
                 {isPriceCol(c) ? (
-                  s.hidePrice ? (
-                    <span className="text-muted-foreground italic">—</span>
+                  s.hidePrice || !unit.extra?.[c] ? (
+                    <span className="text-muted-foreground">—</span>
                   ) : (
                     <span className="text-brand font-bold">{unit.extra[c]}</span>
                   )
@@ -718,12 +717,13 @@ function UnitDialog({
                 {dataCols.map((c) => {
                   const isPrice = isPriceCol(c);
                   const hide = isPrice && statusStyle(unit.status).hidePrice;
+                  const val = unit.extra?.[c];
                   return (
                     <DataBox
                       key={c}
                       label={c}
-                      value={hide ? "—" : unit.extra?.[c] ?? null}
-                      accent={isPrice && !hide && !!unit.extra?.[c]}
+                      value={hide || !val ? "—" : val}
+                      accent={isPrice && !hide && !!val}
                     />
                   );
                 })}
@@ -840,12 +840,10 @@ function MobileUnitsTable({
                 <td className={`px-1 py-2.5 font-bold truncate border-r-4 ${s.border} bg-card`}>{u.unit_number}</td>
                 <td className="px-1 py-2.5 truncate bg-card">{area || "—"}</td>
                 <td className="px-1 py-2.5 truncate bg-card">
-                  {s.hidePrice ? (
-                    <span className="text-muted-foreground italic">—</span>
-                  ) : price ? (
-                    <span className="text-brand font-bold">{price}</span>
-                  ) : (
+                  {s.hidePrice || !price ? (
                     <span className="text-muted-foreground">—</span>
+                  ) : (
+                    <span className="text-brand font-bold">{price}</span>
                   )}
                 </td>
                 <td className="px-1 py-2.5 bg-card">

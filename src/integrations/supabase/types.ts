@@ -23,6 +23,7 @@ export type Database = {
           district: string | null
           id: string
           name: string
+          price_valid_until: string | null
           sheet_tab: string | null
           slug: string
           sort_order: number
@@ -39,6 +40,7 @@ export type Database = {
           district?: string | null
           id: string
           name: string
+          price_valid_until?: string | null
           sheet_tab?: string | null
           slug: string
           sort_order?: number
@@ -55,6 +57,7 @@ export type Database = {
           district?: string | null
           id?: string
           name?: string
+          price_valid_until?: string | null
           sheet_tab?: string | null
           slug?: string
           sort_order?: number
